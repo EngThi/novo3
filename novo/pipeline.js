@@ -164,13 +164,16 @@ async function gerarImagens(prompts, vertexAiClient) {
       console.log(`ETAPA 4: Imagem salva em: ${filePath}`);
       imagePaths.push(filePath);
     } catch (error) {
-      console.error(`ETAPA 4: Erro ao gerar imagem para o prompt ${i + 1}:`, error.details || error.message);
-      // Adicionado: Ignorar erro de imagem e continuar
-      if (error.details && error.details.includes("violates our policies")) {
+      const errorMessage = error.message || (error.details || "");
+      console.error(`ETAPA 4: Erro ao gerar imagem para o prompt ${i + 1}:`, errorMessage);
+
+      // Se o erro for de violação de política, avise e continue
+      if (errorMessage.includes("The response is blocked, as it may violate our policies")) {
           console.warn("ETAPA 4: Prompt de imagem violou politicas. Ignorando esta imagem e continuando.");
           continue; // Pula para o próximo prompt
       }
-      // Se for outro tipo de erro, lançar exceção
+      
+      // Se for outro tipo de erro, lança a exceção para parar o pipeline
       throw error;
     }
   }

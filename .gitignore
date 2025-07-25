@@ -4,6 +4,7 @@
 !package-lock.json
 !tsconfig.json
 .env
+novo/google-drive-credentials.json
 
 # Dependências
 novo/node_modules/
