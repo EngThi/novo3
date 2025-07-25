@@ -10,6 +10,8 @@ const fs = require('fs').promises;
 const path = require('path');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
+const util = require('util');
+
 
 // --- Configuração ---
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -26,6 +28,8 @@ const PROJECT_ID = 'drive-uploader-466418';
 const LOCATION = 'us-central1';
 const PUBLISHER = 'google';
 const MODEL = 'imagegeneration@005';
+const OUTPUT_PATH = 'novo/output';
+
 // --------------------
 
 if (!GEMINI_API_KEY || !GOOGLE_DRIVE_REFRESH_TOKEN || !GOOGLE_SHEET_ID || !GOOGLE_SHEET_NAME || !DISCORD_WEBHOOK_URL) {
@@ -102,7 +106,7 @@ async function gerarRoteiro(topic, row, sheets) {
   const result = await textModel.generateContent(prompt);
   const script = result.response.text();
   console.log("ETAPA 2: Roteiro gerado com sucesso.");
-  const filePath = path.join(__dirname, 'output', 'roteiro.txt');
+  const filePath = path.join(OUTPUT_PATH, 'roteiro.txt');
   await fs.writeFile(filePath, script);
   console.log(`ETAPA 2: Roteiro salvo em '${filePath}'`);
 
@@ -116,13 +120,11 @@ async function criarPromptsDeImagem(script, row, sheets) {
   const result = await textModel.generateContent(prompt);
   let jsonString = result.response.text().trim();
 
-  const jsonMatch = jsonString.match(/[(.*?)]/s);
+  // Remove a formatação de bloco de código da resposta da API
+  jsonString = jsonString.replace(/```json/g, "").replace(/```/g, "");
 
-  if (!jsonMatch || !jsonMatch[0]) {
-      throw new Error("A resposta da API nao continha um array JSON valido.");
-  }
   try {
-    const prompts = JSON.parse(jsonMatch[0]);
+    const prompts = JSON.parse(jsonString);
     console.log(`ETAPA 3: ${prompts.length} pares de prompt/negativePrompt criados.`);
     
     const promptsForSheet = prompts.map(p => `Prompt: ${p.prompt} | Negativo: ${p.negativePrompt}`).join('; ');
@@ -136,7 +138,7 @@ async function criarPromptsDeImagem(script, row, sheets) {
 
 async function gerarImagens(prompts, vertexAiClient) {
   console.log("ETAPA 4: Gerando imagens com Vertex AI (Imagen)...");
-  const imageDir = path.join(__dirname, 'output', 'images');
+  const imageDir = path.join(OUTPUT_PATH, 'images');
   await fs.mkdir(imageDir, { recursive: true });
   const endpoint = `projects/${PROJECT_ID}/locations/${LOCATION}/publishers/${PUBLISHER}/models/${MODEL}`;
   const imagePaths = [];
@@ -175,23 +177,21 @@ async function gerarImagens(prompts, vertexAiClient) {
   return imagePaths;
 }
 
-async function gerarNarracao(script, row, drive, sheets) {
-    console.log("ETAPA 5: Gerando narração com API REST (axios)...");
-    const ttsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GEMINI_API_KEY}`;
+async function gerarNarracao(script, row, drive, sheets, textToSpeechClient) {
+    console.log("ETAPA 5: Gerando narração com a biblioteca de cliente Text-to-Speech...");
     
-    const requestBody = {
+    const request = {
         input: { text: script },
         voice: { languageCode: 'pt-BR', ssmlGender: 'FEMALE', name: 'pt-BR-Wavenet-B' },
         audioConfig: { audioEncoding: 'MP3' },
     };
 
     try {
-        const response = await axios.post(ttsUrl, requestBody);
-        const audioContent = response.data.audioContent;
-        const audioBuffer = Buffer.from(audioContent, 'base64');
+        const [response] = await textToSpeechClient.synthesizeSpeech(request);
+        const audioContent = response.audioContent;
         
-        const audioFilePath = path.join(__dirname, 'output', 'narration.mp3');
-        await fs.writeFile(audioFilePath, audioBuffer, 'binary');
+        const audioFilePath = path.join(OUTPUT_PATH, 'narration.mp3');
+        await fs.writeFile(audioFilePath, audioContent, 'binary');
         console.log(`ETAPA 5: Narração salva em: ${audioFilePath}`);
 
         console.log("ETAPA 5: Fazendo upload da narração para o Google Drive...");
@@ -205,7 +205,7 @@ async function gerarNarracao(script, row, drive, sheets) {
         await updateSheet(sheets, `F${row}`, [[narrationUrl]]);
         return audioFilePath;
     } catch (error) {
-        console.error("ETAPA 5: Erro ao gerar narração:", error.response ? error.response.data : error.message);
+        console.error("ETAPA 5: Erro ao gerar narração:", error.message);
         throw error;
     }
 }
@@ -303,9 +303,10 @@ async function executarPipeline() {
       apiEndpoint: `${LOCATION}-aiplatform.googleapis.com`,
       auth: authIA
     });
+
+    const textToSpeechClient = new TextToSpeechClient({ auth: authIA });
     
-    const outputDir = path.join(__dirname, 'output');
-    await fs.mkdir(outputDir, { recursive: true });
+    await fs.mkdir(OUTPUT_PATH, { recursive: true });
 
     const currentRow = await findNextAvailableRow(sheets);
 
@@ -319,9 +320,9 @@ async function executarPipeline() {
         throw new Error("Nenhuma imagem valida foi gerada. Nao e possivel continuar o pipeline.");
     }
 
-    const narrationPath = await gerarNarracao(script, currentRow, drive, sheets);
+    const narrationPath = await gerarNarracao(script, currentRow, drive, sheets, textToSpeechClient);
     
-    const videoOutputPath = path.join(outputDir, 'video_final.mp4');
+    const videoOutputPath = path.join(OUTPUT_PATH, 'video_final.mp4');
     const videoFinalPath = await montarVideo(narrationPath, imagePaths, videoOutputPath);
     
     await uploadParaDrive(videoFinalPath, currentRow, drive, sheets);
