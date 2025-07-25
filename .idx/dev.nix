@@ -1,7 +1,8 @@
 { pkgs, ... }: {
   packages = [
-    pkgs.nodejs_20
-    pkgs.ffmpeg # Adicionado ffmpeg aqui
+    pkgs.nodejs_20,
+    pkgs.ffmpeg,
+    pkgs.git-filter-repo # Ferramenta para limpar o histórico do Git
   ];
   env = {
     GEMINI_API_KEY = "AIzaSyAprFKW20ySLRVt7_ZlSkb_2UcVfOZ1rzk";
@@ -15,7 +16,9 @@
     ];
     workspace = {
       onCreate = {
-        npm-install = "npm install --prefix novo";
+        npm-install = "npm install --prefix novo",
+        # Copia o arquivo de credencial na criação do workspace, mas não o rastreia com o Git
+        copy-creds = "cp .idx/google-service-account-key.json novo/google-drive-credentials.json"
       };
       onStart = {
         run-pipeline = "node novo/pipeline.js";
