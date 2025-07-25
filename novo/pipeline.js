@@ -1,5 +1,4 @@
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
-
 const { google } = require('googleapis');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 const aiplatform = require('@google-cloud/aiplatform');
@@ -117,7 +116,7 @@ async function criarPromptsDeImagem(script, row, sheets) {
   const result = await textModel.generateContent(prompt);
   let jsonString = result.response.text().trim();
 
-  const jsonMatch = jsonString.match(/\[(.*?)\]/s);
+  const jsonMatch = jsonString.match(/[(.*?)]/s);
 
   if (!jsonMatch || !jsonMatch[0]) {
       throw new Error("A resposta da API nao continha um array JSON valido.");
@@ -164,34 +163,51 @@ async function gerarImagens(prompts, vertexAiClient) {
       imagePaths.push(filePath);
     } catch (error) {
       console.error(`ETAPA 4: Erro ao gerar imagem para o prompt ${i + 1}:`, error.details || error.message);
+      // Adicionado: Ignorar erro de imagem e continuar
+      if (error.details && error.details.includes("violates our policies")) {
+          console.warn("ETAPA 4: Prompt de imagem violou politicas. Ignorando esta imagem e continuando.");
+          continue; // Pula para o próximo prompt
+      }
+      // Se for outro tipo de erro, lançar exceção
+      throw error;
     }
   }
   return imagePaths;
 }
 
-async function gerarNarracao(script, row, textToSpeechClient, drive, sheets) {
-    console.log("ETAPA 5: Gerando narração com Text-to-Speech...");
-    const request = {
+async function gerarNarracao(script, row, drive, sheets) {
+    console.log("ETAPA 5: Gerando narração com API REST (axios)...");
+    const ttsUrl = `https://texttospeech.googleapis.com/v1/text:synthesize?key=${GEMINI_API_KEY}`;
+    
+    const requestBody = {
         input: { text: script },
         voice: { languageCode: 'pt-BR', ssmlGender: 'FEMALE', name: 'pt-BR-Wavenet-B' },
         audioConfig: { audioEncoding: 'MP3' },
     };
 
-    const [response] = await textToSpeechClient.synthesizeSpeech(request);
-    const audioFilePath = path.join(__dirname, 'output', 'narration.mp3');
-    await fs.writeFile(audioFilePath, response.audioContent, 'binary');
-    console.log(`ETAPA 5: Narração salva em: ${audioFilePath}`);
+    try {
+        const response = await axios.post(ttsUrl, requestBody);
+        const audioContent = response.data.audioContent;
+        const audioBuffer = Buffer.from(audioContent, 'base64');
+        
+        const audioFilePath = path.join(__dirname, 'output', 'narration.mp3');
+        await fs.writeFile(audioFilePath, audioBuffer, 'binary');
+        console.log(`ETAPA 5: Narração salva em: ${audioFilePath}`);
 
-    console.log("ETAPA 5: Fazendo upload da narração para o Google Drive...");
-    const file = await drive.files.create({
-        requestBody: { name: 'narration.mp3' },
-        media: { mimeType: 'audio/mpeg', body: require('fs').createReadStream(audioFilePath) },
-    });
-    const narrationUrl = `https://drive.google.com/file/d/${file.data.id}/view`;
-    console.log(`ETAPA 5: Upload da narração concluído. URL: ${narrationUrl}`);
+        console.log("ETAPA 5: Fazendo upload da narração para o Google Drive...");
+        const file = await drive.files.create({
+            requestBody: { name: 'narration.mp3' },
+            media: { mimeType: 'audio/mpeg', body: require('fs').createReadStream(audioFilePath) },
+        });
+        const narrationUrl = `https://drive.google.com/file/d/${file.data.id}/view`;
+        console.log(`ETAPA 5: Upload da narração concluído. URL: ${narrationUrl}`);
 
-    await updateSheet(sheets, `F${row}`, [[narrationUrl]]);
-    return audioFilePath;
+        await updateSheet(sheets, `F${row}`, [[narrationUrl]]);
+        return audioFilePath;
+    } catch (error) {
+        console.error("ETAPA 5: Erro ao gerar narração:", error.response ? error.response.data : error.message);
+        throw error;
+    }
 }
 
 async function montarVideo(narrationPath, imagePaths, outputPath) {
@@ -202,30 +218,23 @@ async function montarVideo(narrationPath, imagePaths, outputPath) {
       return reject(new Error("Nenhuma imagem foi fornecida para a montagem do vídeo."));
     }
 
-    // 1. Obter a duração do áudio
     ffmpeg.ffprobe(narrationPath, (err, metadata) => {
       if (err) {
         return reject(new Error(`Erro ao ler a duração do áudio: ${err.message}`));
       }
       const audioDuration = metadata.format.duration;
       const imageDuration = audioDuration / imagePaths.length;
-      const crossFadeDuration = 1; // 1 segundo de transição
+      const crossFadeDuration = 1;
 
       const command = ffmpeg();
 
-      // 2. Adicionar todas as imagens como entradas
       imagePaths.forEach(imgPath => {
         command.addInput(imgPath).loop(imageDuration);
       });
       
-      // 3. Adicionar o áudio como entrada
       command.addInput(narrationPath);
 
-      // 4. Construir o filtro complexo para cross-fade
       let filterComplex = '';
-      const outputStreams = [];
-
-      // Redimensionar e preparar cada entrada de vídeo
       imagePaths.forEach((_, i) => {
         filterComplex += `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p[v${i}];`;
       });
@@ -240,11 +249,7 @@ async function montarVideo(narrationPath, imagePaths, outputPath) {
 
       command
         .complexFilter(filterComplex, lastOutputStream)
-        .outputOptions([
-          '-c:v libx264', // Codec de vídeo
-          '-c:a aac',      // Codec de áudio
-          '-shortest'      // Termina o vídeo quando o stream mais curto (o áudio) terminar
-        ])
+        .outputOptions(['-c:v libx264', '-c:a aac', '-shortest'])
         .on('end', () => {
           console.log(`ETAPA 6: Vídeo salvo em: ${outputPath}`);
           resolve(outputPath);
@@ -257,23 +262,19 @@ async function montarVideo(narrationPath, imagePaths, outputPath) {
   });
 }
 
-
 async function uploadParaDrive(filePath, row, drive, sheets) {
     console.log(`ETAPA 7: Fazendo upload do arquivo '${path.basename(filePath)}' para o Google Drive...`);
-    const fileMimeType = path.extname(filePath) === '.mp4' ? 'video/mp4' : 'text/plain';
+    const fileMimeType = path.extname(filePath) === '.mp4' ? 'video/mp4' : (path.extname(filePath) === '.txt' ? 'text/plain' : 'audio/mpeg');
     const file = await drive.files.create({
         requestBody: { name: path.basename(filePath) },
         media: { mimeType: fileMimeType, body: require('fs').createReadStream(filePath) },
     });
     const fileId = file.data.id;
-    console.log(`ETAPA 7: Upload concluido! ID do Arquivo: ${fileId}`);
+    const fileUrl = `https://drive.google.com/file/d/${fileId}/view`;
+    console.log(`ETAPA 7: Upload concluido! URL: ${fileUrl}`);
     
-    // Atualiza a coluna certa dependendo do tipo de arquivo
     if (fileMimeType === 'video/mp4') {
-        const videoUrl = `https://drive.google.com/file/d/${fileId}/view`;
-        await updateSheet(sheets, `G${row}`, [[videoUrl]]);
-    } else {
-        await updateSheet(sheets, `D${row}`, [[`https://drive.google.com/file/d/${fileId}/view`]]);
+        await updateSheet(sheets, `G${row}`, [[fileUrl]]);
     }
 
     return fileId;
@@ -283,7 +284,6 @@ async function uploadParaDrive(filePath, row, drive, sheets) {
 async function executarPipeline() {
   await sendToDiscord("Pipeline iniciado...", false);
   try {
-    // --- Autenticação OAuth para Drive e Sheets ---
     const oauth2Client = new google.auth.OAuth2(
       OAUTH_CLIENT_ID,
       OAUTH_CLIENT_SECRET,
@@ -293,7 +293,6 @@ async function executarPipeline() {
     const drive = google.drive({ version: 'v3', auth: oauth2Client });
     const sheets = google.sheets({ version: 'v4', auth: oauth2Client });
 
-    // --- Autenticação por Conta de Serviço para APIs de IA ---
     const keyFilePath = 'novo/google-drive-credentials.json';
     const authIA = new GoogleAuth({
       keyFile: keyFilePath,
@@ -303,11 +302,6 @@ async function executarPipeline() {
     const vertexAiClient = new PredictionServiceClient({
       apiEndpoint: `${LOCATION}-aiplatform.googleapis.com`,
       auth: authIA
-    });
-
-    const textToSpeechClient = new TextToSpeechClient({
-        key: GEMINI_API_KEY,
-        projectId: PROJECT_ID,
     });
     
     const outputDir = path.join(__dirname, 'output');
@@ -319,7 +313,13 @@ async function executarPipeline() {
     const script = await gerarRoteiro(topic, currentRow, sheets);
     const imagePrompts = await criarPromptsDeImagem(script, currentRow, sheets);
     const imagePaths = await gerarImagens(imagePrompts, vertexAiClient);
-    const narrationPath = await gerarNarracao(script, currentRow, textToSpeechClient, drive, sheets);
+    
+    // Verificamos se temos pelo menos 1 imagem antes de tentar gerar a narração
+    if (imagePaths.length === 0) {
+        throw new Error("Nenhuma imagem valida foi gerada. Nao e possivel continuar o pipeline.");
+    }
+
+    const narrationPath = await gerarNarracao(script, currentRow, drive, sheets);
     
     const videoOutputPath = path.join(outputDir, 'video_final.mp4');
     const videoFinalPath = await montarVideo(narrationPath, imagePaths, videoOutputPath);
