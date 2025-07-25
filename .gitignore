@@ -16,3 +16,4 @@ novo/output/
 *.pem
 .vscode/
 .idea/
+node_modules
