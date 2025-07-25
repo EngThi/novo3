@@ -1,0 +1,10 @@
+{
+  "instances": [
+    {
+      "prompt": "a cat"
+    }
+  ],
+  "parameters": {
+    "sampleCount": 1
+  }
+}

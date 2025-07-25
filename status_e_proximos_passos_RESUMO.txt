@@ -1,0 +1,50 @@
+# Resumo do Status do Projeto e Próximos Passos
+
+**STATUS ATUAL: SUCESSO!**
+
+O pipeline de automação de vídeos está **totalmente funcional**, executando com sucesso todas as etapas desde a concepção da ideia até o upload dos ativos finais. Após uma extensa depuração, todos os problemas de autenticação e permissão foram resolvidos.
+
+---
+
+## Conquistas e Funcionalidades Implementadas (O que Funciona):
+
+O pipeline `novo/pipeline.js` agora executa as seguintes etapas em uma única execução:
+
+1.  **Comunicação com a Planilha:** Conecta-se à planilha do Google Sheets, encontra a próxima linha disponível e a utiliza para registrar todo o progresso.
+2.  **Geração de Ideia:** Usa o Gemini para criar um novo tópico de vídeo viral e o registra na planilha.
+3.  **Criação de Roteiro:** Gera um roteiro detalhado com base na ideia e o salva tanto em um arquivo `roteiro.txt` quanto na própria planilha.
+4.  **Criação de Prompts de Imagem:** Analisa o roteiro e gera 5 prompts detalhados para a criação de imagens visuais.
+5.  **Geração de Imagens (Vertex AI):** **FUNCIONANDO!** Utiliza a autenticação via **Conta de Serviço (`.json`)** para se conectar à API Vertex AI e gerar as 5 imagens correspondentes aos prompts. As imagens são salvas na pasta `output/images`.
+6.  **Geração de Narração (Text-to-Speech):** **FUNCIONANDO!** Utiliza a autenticação via **API Key** para se conectar à API Text-to-Speech, gerar o áudio MP3 da narração e salvá-lo como `narration.mp3`.
+7.  **Upload para Google Drive:** Faz o upload do roteiro (`roteiro.txt`) e da narração (`narration.mp3`) para uma pasta no Google Drive.
+8.  **Atualização Final da Planilha:** Registra os links dos arquivos no Drive e marca o status da linha como "Concluído".
+9.  **Notificações no Discord:** Envia notificações de status (início, sucesso ou erro) para um canal do Discord, permitindo o monitoramento remoto.
+
+### Arquitetura de Autenticação (A Chave do Sucesso):
+
+A solução final envolveu uma **arquitetura de autenticação híbrida**, onde cada serviço usa o método mais apropriado:
+*   **Google Drive & Sheets:** Usam **OAuth 2.0** com um Refresh Token, ideal para acessar dados do usuário.
+*   **Vertex AI (Imagens):** Usa uma **Conta de Serviço (arquivo `.json`)**, ideal para serviços de backend que precisam de permissões próprias.
+*   **Text-to-Speech (Narração):** Usa uma **API Key**, um método simples e eficaz para APIs que o suportam.
+
+---
+
+## Próximos Passos (O Futuro do Projeto):
+
+Com a geração de todos os ativos (roteiro, imagens e narração) funcionando de forma confiável, o próximo grande passo é a montagem do vídeo.
+
+**Próximo Passo Imediato: Implementar a Etapa 6: Montagem de Vídeo.**
+
+Isto envolverá:
+1.  **Escolher uma biblioteca de edição de vídeo para Node.js:** Opções populares incluem `ffmpeg` (através de um wrapper como `fluent-ffmpeg`) ou serviços de API de vídeo como `Shotstack` ou `Remotion`.
+2.  **Desenvolver a lógica de montagem:** Criar uma nova função no `pipeline.js` que:
+    *   Pegue o arquivo de áudio `narration.mp3`.
+    *   Pegue as 5 imagens da pasta `output/images`.
+    *   Sincronize as imagens com a narração (ex: cada imagem dura X segundos).
+    *   Adicione transições simples entre as imagens.
+    *   Renderize o vídeo final como um arquivo `video.mp4`.
+3.  **Integrar no Pipeline:** Chamar esta nova função após a Etapa 5 e antes da Etapa 7, fazendo o upload do `video.mp4` final para o Google Drive.
+
+---
+
+**Sessão Encerrada:** Este resumo foi gerado para documentar o pipeline 100% funcional e fornecer um roteiro claro para a implementação da edição de vídeo.
