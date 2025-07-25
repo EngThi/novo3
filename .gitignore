@@ -1,36 +1,18 @@
-# Ignorar arquivos de variáveis de ambiente
+# Arquivos de credenciais e chaves
+*.json
+!package.json
+!package-lock.json
+!tsconfig.json
 .env
 
-# Ignorar dependências do Node.js
-node_modules
+# Dependências
+/novo/node_modules
 
-# Arquivos de ambiente - NUNCA comitar!
-.env
+# Arquivos de saída do pipeline
+/novo/output/
 
-# Arquivos de credenciais e tokens
-google-drive-credentials.json
-token.pickle
-token.json
-
-# Logs
-logs/
-*.log
-
-# Diretórios de output e temporários
-output/
-temp/
-data/
-
-# Cache do Python
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
-# Dependências e ambiente virtual
-venv/
-.venv/
-env/
-.env/
-pip-wheel-metadata/
-google-drive-credentials.json
+# Arquivos do sistema e do editor
+.DS_Store
+*.pem
+.vscode/
+.idea/
