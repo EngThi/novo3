@@ -6,10 +6,10 @@
 .env
 
 # Dependências
-/novo/node_modules
+novo/node_modules/
 
 # Arquivos de saída do pipeline
-/novo/output/
+novo/output/
 
 # Arquivos do sistema e do editor
 .DS_Store
