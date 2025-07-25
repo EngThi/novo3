@@ -211,7 +211,7 @@ async function gerarNarracao(script, row, drive, sheets, textToSpeechClient) {
 }
 
 async function montarVideo(narrationPath, imagePaths, outputPath) {
-  console.log("ETAPA 6: Montando vídeo com FFmpeg...");
+  console.log("ETAPA 6: Montando vídeo com FFmpeg e efeito Ken Burns...");
 
   return new Promise((resolve, reject) => {
     if (!imagePaths || imagePaths.length === 0) {
@@ -225,33 +225,41 @@ async function montarVideo(narrationPath, imagePaths, outputPath) {
       const audioDuration = metadata.format.duration;
       const imageDuration = audioDuration / imagePaths.length;
       const crossFadeDuration = 1;
+      const framerate = 25;
 
       const command = ffmpeg();
 
       imagePaths.forEach(imgPath => {
-        command.addInput(imgPath).loop(imageDuration);
+        command.input(imgPath).inputOptions(`-t ${imageDuration + crossFadeDuration}`);
       });
-      
+
       command.addInput(narrationPath);
 
       let filterComplex = '';
       imagePaths.forEach((_, i) => {
-        filterComplex += `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:(ow-iw)/2:(oh-ih)/2,setsar=1,format=yuv420p[v${i}];`;
+        const zoompanFrames = imageDuration * framerate;
+        filterComplex += `[${i}:v]scale=1920:1080:force_original_aspect_ratio=decrease,pad=1920:1080:-1:-1:color=black,setsar=1,format=yuv420p,zoompan=z='min(zoom+0.001,1.1)':d=${zoompanFrames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=1920x1080[v${i}];`;
       });
       
       let lastOutputStream = 'v0';
       for (let i = 1; i < imagePaths.length; i++) {
         const nextOutputStream = `vout${i}`;
-        const offset = i * imageDuration - (i * crossFadeDuration);
+        const offset = i * imageDuration;
         filterComplex += `[${lastOutputStream}][v${i}]xfade=transition=fade:duration=${crossFadeDuration}:offset=${offset}[${nextOutputStream}];`;
         lastOutputStream = nextOutputStream;
       }
 
       command
         .complexFilter(filterComplex, lastOutputStream)
-        .outputOptions(['-c:v libx264', '-c:a aac', '-shortest'])
+        .outputOptions([
+            '-c:v libx264',
+            '-r 25',
+            '-c:a aac',
+            '-pix_fmt yuv420p',
+            '-shortest'
+        ])
         .on('end', () => {
-          console.log(`ETAPA 6: Vídeo salvo em: ${outputPath}`);
+          console.log(`ETAPA 6: Vídeo salvo com sucesso em: ${outputPath}`);
           resolve(outputPath);
         })
         .on('error', (err) => {
