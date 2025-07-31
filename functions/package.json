@@ -1,0 +1,18 @@
+{
+  "name": "canva-auth-functions",
+  "description": "Cloud Functions for Canva OAuth2 Flow",
+  "main": "index.js",
+  "scripts": {
+    "lint": "echo 'Linting not configured, skipping.' && exit 0"
+  },
+  "dependencies": {
+    "firebase-functions": "^5.0.1",
+    "firebase-admin": "^12.1.1",
+    "axios": "^1.7.2",
+    "crypto": "^1.0.1"
+  },
+  "engines": {
+    "node": "20"
+  },
+  "private": true
+}
