@@ -1,5 +1,3 @@
-const puppeteer = require('puppeteer');
-const chokidar = require('chokidar');
 const fs = require('fs-extra');
 const path = require('path');
 const { spawn } = require('child_process');
@@ -59,6 +57,7 @@ class AutoWhiskImageService {
     }
 
     async launchChromeWithExtension() {
+        const puppeteer = require('puppeteer');
         console.log('🌐 Launching Chrome with extension in server mode...');
         this.browser = await puppeteer.launch({
             headless: this.config.headless,
@@ -160,6 +159,7 @@ class AutoWhiskImageService {
     }
 
     async monitorDownloads(expectedCount) {
+        const chokidar = require('chokidar');
         return new Promise((resolve, reject) => {
             const downloadedFiles = [];
             const watcher = chokidar.watch(this.downloadPath, { ignoreInitial: true, persistent: true });

@@ -40,24 +40,6 @@ class HybridImageGenerator {
     }
 
     async generateWithWhisk(prompts, executionId, executionPath, driveFolderId, tempFileManager) {
-        if (MOCK_APIS) {
-            console.log("[Hybrid] --- MODO MOCK ATIVADO (Whisk) ---");
-            const mockImagePaths = [];
-            const mockDriveUrls = [];
-            const imageDir = path.join(executionPath, 'images');
-            await fs.ensureDir(imageDir);
-
-            for (let i = 0; i < prompts.length; i++) {
-                const filePath = path.join(imageDir, `${executionId}_mock_image_whisk_${i + 1}.png`);
-                // Cria um arquivo de imagem falso
-                await fs.writeFile(filePath, Buffer.from('mock whisk image content'));
-                tempFileManager.add(filePath);
-                mockImagePaths.push(filePath);
-                mockDriveUrls.push(`https://mock.drive.google.com/file/d/mock_image_whisk_${i + 1}`);
-            }
-            return { localPaths: mockImagePaths, driveUrls: mockDriveUrls };
-        }
-
         this.stats.whiskAttempts++;
         const whiskService = MOCK_APIS ? new MockAutoWhiskImageService() : new AutoWhiskImageService();
         try {
