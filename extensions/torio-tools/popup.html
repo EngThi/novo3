@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Whisk Automation Loop</title>
+  <link rel="stylesheet" href="popup.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="card-container">
+    <h1>TÓRIO TOOLS | Image Automation Loop</h1>
+    
+    <!-- PIX Support Section -->
+    <div class="support-section">
+      <p>Gostou do Tório Tools? Apoie o desenvolvimento com um PIX de qualquer valor!</p>
+      <div class="pix-info">
+        <span>PIX: <strong class="pix-key">toriotools@gmail.com</strong></span>
+      </div>
+    </div>
+
+    <div class="input-section">
+      <textarea id="prompts" placeholder="Cole seus prompts aqui, um por linha"></textarea>
+      <div id="promptCountFeedback"></div>
+    </div>
+
+    <div class="button-group">
+      <button id="pastePromptsButton">COLAR PROMPTS</button>
+    </div>
+    
+    <button id="startButton">INICIAR LOOP NO WHISK</button>
+    <button id="stopButton" disabled>INTERROMPER GERAÇÃO</button>
+    
+    <div class="progress-bar" id="progressBar">
+      <div class="progress" id="progress"></div>
+    </div>
+    
+    <div id="status">Pronto para começar.</div>
+  </div>
+
+  <script src="https://kit.fontawesome.com/your-code.js" crossorigin="anonymous"></script>
+  <script src="popup.js"></script>
+</body>
+</html>

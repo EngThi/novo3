@@ -1,0 +1,13 @@
+{
+  "name": "whisk-automation-loop",
+  "version": "1.0.0",
+  "description": "Chrome extension for automating Whisk image generation",
+  "main": "create_icons.js",
+  "scripts": {
+    "create-icons": "node create_icons.js"
+  },
+  "dependencies": {
+    "jimp": "^0.22.12"
+  },
+  "license": "MIT"
+}

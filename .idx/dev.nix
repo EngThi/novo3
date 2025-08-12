@@ -1,32 +1,50 @@
-{ pkgs, ... }: {
-  # Pacotes para instalar no ambiente (sem vírgulas na lista)
+{ pkgs, ... }:
+
+{
+  channel = "stable-24.05";
+
   packages = [
     pkgs.nodejs_20
     pkgs.ffmpeg
-    pkgs.git-filter-repo
+
+    # --- DEPENDÊNCIAS COMPLETAS PARA PUPPETEER ---
+    pkgs.chromium
+    pkgs.nss
+    pkgs.nspr
+    pkgs.cups
+    pkgs.dbus
+    pkgs.expat
+    pkgs.glib
+    pkgs.gtk3
+    pkgs.pango
+    pkgs.cairo
+    pkgs.gsettings-desktop-schemas
+    pkgs.at-spi2-atk
+    pkgs.libxkbcommon
+    pkgs.libglvnd
+    pkgs.mesa
+    pkgs.systemd
+    pkgs.alsa-lib
+
+    # Pacotes Xorg necessários
+    pkgs.xorg.libX11
+    pkgs.xorg.libXcomposite
+    pkgs.xorg.libXcursor
+    pkgs.xorg.libXdamage
+    pkgs.xorg.libXext
+    pkgs.xorg.libXfixes
+    pkgs.xorg.libXi
+    pkgs.xorg.libXrandr
+    pkgs.xorg.libXrender
+    pkgs.xorg.libXScrnSaver
+    pkgs.xorg.libXtst
+    pkgs.xorg.libxcb
+    
+    # --- SOLUÇÃO DEFINITIVA: Servidor de Tela Virtual ---
+    pkgs.xorg.xorgserver # Fornece o Xvfb
   ];
 
-  # Variáveis de ambiente
-  env = {
-    GEMINI_API_KEY = "AIzaSyAprFKW20ySLRVt7_ZlSkb_2UcVfOZ1rzk";
-    GCLOUD_PROJECT = "drive-uploader-466418";
-  };
-
-  # Configurações do IDX
-  idx = {
-    extensions = [
-      "dbaeumer.vscode-eslint"
-    ];
-    workspace = {
-      # Comandos executados na criação do workspace
-      onCreate = {
-        npm-install = "npm install --prefix novo";
-        copy-creds = "cp .idx/google-service-account-key.json novo/google-drive-credentials.json";
-      };
-      # Comando executado na inicialização do workspace
-      onStart = {
-        run-pipeline = "node novo/pipeline.js";
-      };
-    };
-  };
+  env = {};
+  idx.extensions = [];
+  idx.workspace = {};
 }

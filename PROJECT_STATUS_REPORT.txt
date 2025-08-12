@@ -1,0 +1,41 @@
+# Relatório de Status do Projeto: Pipeline de Geração de Conteúdo (Modo de Simulação)
+
+**Data:** 07 de agosto de 2025
+**Status Atual:** **Pipeline Totalmente Operacional em Modo de Simulação (Mock)**
+
+## Visão Geral e Conquistas Recentes
+
+O pipeline de geração de conteúdo foi reconfigurado com sucesso para operar em um ambiente de simulação completo. Esta é uma conquista crucial que permite o desenvolvimento e teste contínuos sem dependência de APIs externas pagas ou com limites de uso.
+
+Anteriormente, o pipeline enfrentava interrupções devido a:
+*   **Erros de Faturamento/Quota (429 Too Many Requests, PERMISSION_DENIED):** Causados pelo esgotamento do período de teste gratuito das APIs do Google (Google Drive, Google Sheets, Google AI Platform).
+*   **Dependências de Ambiente:** Tentativas de iniciar navegadores reais (Puppeteer, Xvfb) para a automação do Whisk, mesmo quando o objetivo era apenas simular o processo.
+
+Todas essas barreiras foram superadas através da implementação de um robusto **Modo de Simulação (Mock)**.
+
+## Detalhes da Implementação do Modo de Simulação
+
+As seguintes modificações foram realizadas para garantir a operação independente do pipeline:
+
+1.  **Flag `MOCK_APIS`:** Uma variável de controle (`MOCK_APIS = true`) foi introduzida no `pipeline.js` para ativar globalmente o modo de simulação.
+2.  **Clientes Mock para APIs do Google (`clientFactory.js`):**
+    *   Foram criados `MockDriveClient` e `MockSheetsClient` que simulam as interações com o Google Drive e Google Sheets, respectivamente. Eles armazenam e manipulam dados em memória, sem realizar chamadas de rede reais.
+    *   A lógica de `append`, `get` e `batchUpdate` para a planilha simulada foi aprimorada para refletir com precisão o comportamento esperado pelo `StateManager`.
+3.  **Simulação de Geração de Conteúdo (`pipeline.js`):**
+    *   As funções `gerarNarracao` (Google Text-to-Speech) e `montarVideo` (FFmpeg) foram modificadas para, no modo mock, criar arquivos de áudio e vídeo falsos localmente, evitando o processamento intensivo de recursos e chamadas de API.
+    *   A função `uploadVideoFinal` também foi mockada para simular o upload para o Google Drive, retornando URLs fictícias.
+4.  **Simulação de Geração de Imagens (`hybrid-image-generator.js` e `whisk-image-service-auto.js`):**
+    *   A classe `HybridImageGenerator` foi configurada para forçar o uso do modo mock, garantindo que não tente acessar APIs reais do Google AI Platform (Imagen 4).
+    *   Uma nova classe `MockAutoWhiskImageService` foi criada em `whisk-image-service-auto.js`. Esta classe substitui o `AutoWhiskImageService` real no modo mock, simulando a inicialização do navegador (Puppeteer, Xvfb) e a geração de imagens, sem a necessidade de um ambiente gráfico ou de credenciais de login.
+    *   A exportação e importação das classes `AutoWhiskImageService` e `MockAutoWhiskImageService` foram corrigidas para evitar conflitos de declaração.
+5.  **Saída Limpa do Processo (`pipeline.js`):**
+    *   Um `process.exit(0)` explícito foi adicionado ao final da execução bem-sucedida do pipeline para garantir que o processo Node.js seja encerrado de forma limpa, evitando que ele permaneça ativo em segundo plano.
+
+## Implicações e Próximos Passos
+
+Com o pipeline agora totalmente funcional em modo de simulação, o projeto se beneficia enormemente:
+*   **Desenvolvimento Acelerado:** Novas funcionalidades podem ser implementadas e testadas rapidamente, sem preocupações com custos de API ou limites de uso.
+*   **Ambiente de Teste Estável:** Proporciona um ambiente previsível para testes unitários e de integração, facilitando a identificação e correção de bugs.
+*   **Foco no Core:** Permite que o foco do desenvolvimento se volte para a lógica de negócios e a integração com o "Whisk" (que era o objetivo original), sem ser impedido por dependências externas.
+
+Este é um marco importante para o projeto, estabelecendo uma base sólida para o desenvolvimento futuro.

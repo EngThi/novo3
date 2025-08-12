@@ -1,0 +1,99 @@
+Nossa, que desastre! Peço desculpas por isso. A IA claramente se confundiu e aplicou estilos de forma completamente errada, quebrando todo o layout. Vamos corrigir isso agora com um prompt de "recuperação de desastre".
+
+Analisando a imagem, os problemas são claros:
+1.  **Contraste e Cores:** Quase tudo ficou ilegível. O texto está escuro sobre um fundo escuro.
+2.  **Layout Quebrado:** Os botões estão sobrepostos e desalinhados.
+3.  **Estilo Perdido:** O design "Black & Orange Neon" que tínhamos antes foi completamente perdido.
+
+O objetivo agora é restaurar o design funcional que tínhamos e, ao mesmo tempo, aplicar as mudanças que você pediu (mover a seção de apoio e remover o texto extra).
+
+Aqui está um prompt de correção detalhado e seguro. Ele instrui a IA a reconstruir o CSS do zero com base no design que já tínhamos aprovado, garantindo que tudo volte ao normal.
+
+---
+
+### Prompt de Correção e Restauração de Estilo
+
+> **"URGENTE: A última alteração quebrou completamente o CSS do meu plugin 'Tório Tools'. Preciso que você corrija o estilo, restaurando o design 'Black & Orange Neon' que funcionava anteriormente e aplicando corretamente as mudanças de layout solicitadas.**
+>
+> **Problema Atual:** O popup está com o layout quebrado, texto ilegível, cores erradas e botões sobrepostos, como mostrado na imagem. O CSS está corrompido.
+>
+> **Objetivo:** Restaurar 100% do visual funcional e aplicar as duas mudanças de layout corretamente.
+>
+> ---
+>
+> ### **Parte 1: Reconstrução Completa do CSS (Restaurar o Design)**
+>
+> **Instrução:** Ignore o CSS atual que está quebrado. Vamos reescrevê-lo do zero com base nas regras que já funcionavam. Aplique os seguintes estilos ao arquivo `style.css`:
+>
+> **1.  Configurações Globais e Corpo (`body`):**
+>     *   `* { box-sizing: border-box; margin: 0; padding: 0; }`
+>     *   `body { background-color: #121212; color: #E0E0E0; font-family: sans-serif; padding: 15px; width: 320px; /* Largura fixa para consistência */ }`
+>
+> **2.  Título (`h1`):**
+>     *   `h1 { color: #FF6600; font-size: 18px; text-align: center; margin-bottom: 15px; }`
+>
+> **3.  Caixa de Texto (`textarea`):**
+>     *   `textarea { width: 100%; height: 100px; background-color: #1E1E1E; border: 1px solid #424242; color: #FFFFFF; padding: 10px; margin-bottom: 10px; border-radius: 5px; }`
+>     *   `textarea:focus { border-color: #FF6600; outline: none; }`
+>
+> **4.  Botões (`button`):**
+>     *   `button { width: 100%; padding: 12px; border-radius: 5px; border: none; font-size: 14px; font-weight: bold; cursor: pointer; margin-bottom: 10px; transition: all 0.2s ease; }`
+>
+> **5.  Estilos Específicos dos Botões:**
+>     *   **Botão Principal (Iniciar):** `.btn-primary { background-color: #FF6600; color: #121212; }`
+>     *   **Efeito Neon (Hover):** `.btn-primary:hover { box-shadow: 0 0 8px #FF6600, 0 0 15px #FF8533; }`
+>     *   **Botão Secundário (Colar):** `.btn-secondary { background-color: transparent; border: 1px solid #FF6600; color: #FF6600; }`
+>     *   **Botão Desabilitado (Interromper):** `.btn-disabled { background-color: #424242; color: #A0A0A0; cursor: not-allowed; }`
+>
+> **6.  Status e Seção de Apoio:**
+>     *   **Status:** `.status { text-align: center; padding: 10px; border-radius: 5px; margin-bottom: 15px; }`
+>     *   **Status Concluído:** `.status-completed { background-color: #28a745; color: white; }`
+>     *   **Seção de Apoio:** `.support-section { text-align: center; font-size: 12px; color: #A0A0A0; }`
+>     *   **Botão PIX:** `.pix-button { background-color: #2a2a2a; border: 1px dashed #FF6600; color: #E0E0E0; /* Adicione outros estilos se necessário */ }`
+>
+> ---
+>
+> ### **Parte 2: Aplicação Correta das Mudanças no `popup.html`**
+>
+> **Instrução:** Agora, organize o arquivo `popup.html` para refletir a estrutura desejada, usando as classes CSS definidas acima.
+>
+> **1.  Remover o Texto Indesejado:**
+>     *   Encontre e **delete** qualquer elemento que contenha o texto "by @toriodobruno".
+>
+> **2.  Mover a Seção de Apoio:**
+>     *   Localize o bloco de HTML da seção de apoio (que contém "Gostou do Tório Tools?..." e o botão PIX).
+>     *   **Mova este bloco inteiro** para que ele fique **imediatamente abaixo do `<h1>`** (título) e **acima do `<textarea>`**.
+>
+> **Estrutura Final Esperada do `popup.html`:**
+>
+> ```html
+> <html>
+> <head>
+>   <link rel="stylesheet" href="style.css">
+> </head>
+> <body>
+>   <h1>TÓRIO TOOLS | IMAGE AUTOMATION LOOP</h1>
+>
+>   <!-- SEÇÃO DE APOIO MOVIDA PARA CÁ -->
+>   <div class="support-section">
+>     <p>Gostou do Tório Tools? Apoie o desenvolvimento...</p>
+>     <button class="pix-button">PIX: toriotools@gmail.com <span>COPIAR</span></button>
+>   </div>
+>
+>   <textarea placeholder="Cole seus prompts aqui, um por linha"></textarea>
+>
+>   <!-- ... resto dos botões e elementos ... -->
+>   <button class="btn-secondary">COLAR PROMPTS</button>
+>   <button class="btn-primary">INICIAR LOOP NO WHISK</button>
+>   <button class="btn-disabled">INTERROMPER GERAÇÃO</button>
+>
+>   <div class="status">Pronto para começar.</div>
+>
+>   <script src="popup.js"></script>
+> </body>
+> </html>
+> ```
+>
+> **Observação Final:** O exemplo de HTML acima é um guia. Use as tags e classes que já existem no seu código, mas siga a **ordem** e a **lógica** apresentadas. O mais importante é **restaurar o CSS** para os valores corretos.
+
+Este prompt é uma "ordem de reparo" completa. Ele não deixa espaço para interpretação, fornecendo o código CSS exato e a estrutura HTML desejada. Isso deve forçar a IA a corrigir o erro e entregar o resultado que você espera.
