@@ -8,7 +8,7 @@
 
   # Variáveis de ambiente
   env = {
-    GEMINI_API_KEY = "AIzaSyAprFKW20ySLRVt7_ZlSkb_2UcVfOZ1rzk";
+    GEMINI_API_KEY = "";
     GCLOUD_PROJECT = "drive-uploader-466418";
   };
 
