@@ -1,0 +1,127 @@
+stages:
+  - setup
+  - build
+  - test
+  - deploy
+  - automation
+
+variables:
+  DEBIAN_FRONTEND: noninteractive
+  NODE_VERSION: "18"
+  PYTHON_VERSION: "3.9"
+
+# Cache para dependências
+cache:
+  paths:
+    - node_modules/
+    - .pip-cache/
+
+before_script:
+  - apt-get update -qq
+  - apt-get install -y curl wget git ffmpeg python3 python3-pip espeak espeak-data
+
+# ==== STAGE: SETUP ====
+install_dependencies:
+  stage: setup
+  image: node:18-bullseye
+  script:
+    - echo "Installing Node.js dependencies..."
+    - npm ci
+    - echo "Installing Python TTS dependencies..."
+    - pip3 install --cache-dir .pip-cache TTS gTTS pyttsx3
+    - echo "Installing FFmpeg and media tools..."
+    - which ffmpeg
+    - which espeak
+  artifacts:
+    paths:
+      - node_modules/
+      - .pip-cache/
+    expire_in: 1 hour
+
+# ==== STAGE: BUILD ====
+build_pipeline:
+  stage: build
+  image: node:18-bullseye
+  dependencies:
+    - install_dependencies
+  script:
+    - echo "Building GCP-free pipeline modules..."
+    - mkdir -p novo/modules
+    - echo "Validating environment setup..."
+    - node --version
+    - python3 --version
+    - ffmpeg -version
+  artifacts:
+    paths:
+      - novo/modules/
+    expire_in: 1 hour
+
+# ==== STAGE: TEST ====
+test_components:
+  stage: test
+  image: node:18-bullseye
+  dependencies:
+    - build_pipeline
+  script:
+    - echo "Testing alternative image generation..."
+    - node novo/test-image-alternatives.js
+    - echo "Testing local TTS..."
+    - node novo/test-tts-alternatives.js
+    - echo "Testing video processing..."
+    - node novo/test-video-processing.js
+  allow_failure: true
+
+# ==== STAGE: DEPLOY ====
+deploy_setup:
+  stage: deploy
+  image: node:18-bullseye
+  dependencies:
+    - test_components
+  script:
+    - echo "Deploying GCP-free configuration..."
+    - cp novo/.env.gcp-free novo/.env
+    - echo "Configuration deployed successfully"
+  only:
+    - main
+
+# ==== STAGE: AUTOMATION ====
+run_automated_pipeline:
+  stage: automation
+  image: node:18-bullseye
+  dependencies:
+    - deploy_setup
+  script:
+    - echo "Executing automated video creation pipeline..."
+    - cd novo
+    - node pipeline-gcp-free.js
+  artifacts:
+    paths:
+      - novo/output/
+    expire_in: 7 days
+  only:
+    - schedules
+    - manual
+
+# Job manual para teste rápido
+quick_test:
+  stage: automation
+  image: node:18-bullseye
+  script:
+    - echo "Quick test of GCP-free alternatives..."
+    - npm install
+    - pip3 install TTS
+    - node novo/quick-test.js
+  when: manual
+  allow_failure: true
+
+# Notificação de sucesso
+notify_success:
+  stage: automation
+  image: alpine:latest
+  script:
+    - echo "Pipeline executado com sucesso!"
+    - 'curl -X POST -H "Content-Type: application/json" -d "{\"content\":\"✅ Pipeline novo3 GCP-free executado com sucesso!\"}" $DISCORD_WEBHOOK_URL'
+  dependencies:
+    - run_automated_pipeline
+  when: on_success
+  allow_failure: true
