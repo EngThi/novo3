@@ -1,0 +1,48 @@
+{
+  "name": "novo3-gcp-free",
+  "version": "2.0.0",
+  "description": "Pipeline de automacao de videos sem dependencias do Google Cloud Platform",
+  "main": "pipeline-gcp-free.js",
+  "scripts": {
+    "start": "node pipeline-gcp-free.js",
+    "test": "node test-alternatives.js",
+    "setup": "npm run setup:system && npm run setup:python",
+    "setup:system": "echo 'Instale: sudo apt-get install ffmpeg espeak espeak-data imagemagick python3 python3-pip'",
+    "setup:python": "pip3 install TTS gTTS pyttsx3 Pillow",
+    "quick-test": "node quick-test.js",
+    "clean": "rm -rf output/* cache/* temp/*"
+  },
+  "dependencies": {
+    "@google/generative-ai": "^0.24.1",
+    "axios": "^1.7.2",
+    "dotenv": "^17.2.1",
+    "google-auth-library": "^10.1.0",
+    "googleapis": "^153.0.0",
+    "editly": "^0.20.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "sharp": "^0.33.0"
+  },
+  "optionalDependencies": {
+    "ffcreator": "^7.5.0",
+    "canvas": "^2.11.2",
+    "node-gtts": "^2.0.2"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "video-automation",
+    "youtube",
+    "ai",
+    "gcp-free",
+    "text-to-speech",
+    "image-generation",
+    "ffmpeg",
+    "nodejs"
+  ],
+  "author": "Thiago Batista Teixeira",
+  "license": "MIT"
+}
