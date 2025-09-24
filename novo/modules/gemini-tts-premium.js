@@ -6,6 +6,7 @@ const CredentialManager = require('./credential-manager');
 /**
  * Sistema TTS Premium com vozes Gemini 2.5 Flash
  * Baseado no sistema HTML com 30+ vozes profissionais e rotação de API keys
+ * VERSÃO CORRIGIDA - API Key handling melhorado
  */
 class GeminiTTSPremium {
     constructor(options = {}) {
@@ -18,6 +19,9 @@ class GeminiTTSPremium {
         this.chunkSize = options.chunkSize || 800; // palavras por chunk
         this.sampleRate = 24000; // Padrão Gemini TTS
         this.apiKeys = [];
+        
+        // API key passada diretamente (CORREÇÃO)
+        this.directApiKey = options.apiKey || process.env.GEMINI_API_KEY;
         
         // Métricas
         this.metrics = {
@@ -204,41 +208,63 @@ class GeminiTTSPremium {
         return selectedVoice;
     }
 
-    // === CARREGAMENTO DE API KEYS ===
+    // === CARREGAMENTO DE API KEYS - CORRIGIDO ===
     async loadApiKeys() {
         try {
+            console.log(`🔑 Debug - API Key direta: ${this.directApiKey ? 'SIM' : 'NÃO'}`);
+            
+            // Priorizar API key passada diretamente
+            if (this.directApiKey && this.directApiKey.length > 10) {
+                this.apiKeys = [{
+                    key: this.directApiKey,
+                    hasCredits: true,
+                    status: 'Pronta',
+                    color: 'text-green-400'
+                }];
+                console.log(`🔑 API key direta carregada: ${this.directApiKey.substring(0,10)}...`);
+                return;
+            }
+            
             // Tentar obter de credenciais gerenciadas
-            const credentials = await this.credentialManager.getUsageStats('gemini');
-            if (credentials.gemini && credentials.gemini.credentials.length > 0) {
-                this.apiKeys = credentials.gemini.credentials
-                    .filter(cred => cred.active)
-                    .map(cred => ({
-                        key: cred.id, // Será descriptografado pelo credential manager
-                        hasCredits: true,
-                        status: 'Aguardando',
-                        color: 'text-gray-400'
-                    }));
+            try {
+                const credentials = await this.credentialManager.getUsageStats('gemini');
+                if (credentials.gemini && credentials.gemini.credentials.length > 0) {
+                    this.apiKeys = credentials.gemini.credentials
+                        .filter(cred => cred.active)
+                        .map(cred => ({
+                            key: cred.id, // Será descriptografado pelo credential manager
+                            hasCredits: true,
+                            status: 'Aguardando',
+                            color: 'text-gray-400'
+                        }));
+                    console.log(`🔑 ${this.apiKeys.length} credenciais gerenciadas carregadas`);
+                    return;
+                }
+            } catch (credError) {
+                console.log(`⚠️ Erro ao carregar credenciais gerenciadas: ${credError.message}`);
             }
             
             // Fallback para variáveis de ambiente
+            const envKeys = [];
+            for (let i = 1; i <= 10; i++) {
+                const key = process.env[`GEMINI_API_KEY${i > 1 ? '_' + i : ''}`];
+                if (key) envKeys.push(key);
+            }
+            
+            this.apiKeys = envKeys.map(key => ({
+                key: key.trim(),
+                hasCredits: true,
+                status: 'Environment',
+                color: 'text-blue-400'
+            }));
+            
             if (this.apiKeys.length === 0) {
-                const envKeys = [];
-                for (let i = 1; i <= 10; i++) {
-                    const key = process.env[`GEMINI_API_KEY${i > 1 ? '_' + i : ''}`];
-                    if (key) envKeys.push(key);
-                }
-                
-                this.apiKeys = envKeys.map(key => ({
-                    key: key.trim(),
-                    hasCredits: true,
-                    status: 'Aguardando',
-                    color: 'text-gray-400'
-                }));
+                throw new Error('Nenhuma API key do Gemini encontrada');
             }
             
             console.log(`🔑 ${this.apiKeys.length} API keys carregadas para Gemini TTS`);
         } catch (error) {
-            console.error('Erro ao carregar API keys:', error.message);
+            console.error('❌ Erro ao carregar API keys:', error.message);
             this.apiKeys = [];
         }
     }
@@ -293,6 +319,7 @@ class GeminiTTSPremium {
         const currentApi = this.apiKeys[this.currentApiKeyIndex];
         
         if (!currentApi || !currentApi.hasCredits) {
+            console.log(`❌ API key ${this.currentApiKeyIndex + 1} indisponível`);
             return null;
         }
         
@@ -310,6 +337,8 @@ class GeminiTTSPremium {
         };
         
         try {
+            console.log(`🔊 Gerando áudio com API key ${this.currentApiKeyIndex + 1} (${currentApi.key.substring(0,10)}...)`);
+            
             const response = await axios.post(`${API_URL}${currentApi.key}`, payload, {
                 headers: { 'Content-Type': 'application/json' },
                 timeout: 60000
@@ -327,6 +356,7 @@ class GeminiTTSPremium {
                 currentApi.status = 'Em uso';
                 currentApi.color = 'text-green-500';
                 this.metrics.api_calls++;
+                console.log(`✅ Chunk gerado com sucesso (${audioData.length} chars)`);
                 return audioData;
             } else {
                 currentApi.status = 'Falhou (resposta inválida)';
@@ -336,7 +366,7 @@ class GeminiTTSPremium {
             }
             
         } catch (error) {
-            console.error(`Erro na API key ${this.currentApiKeyIndex + 1}:`, error.message);
+            console.error(`❌ Erro na API key ${this.currentApiKeyIndex + 1}:`, error.message);
             
             if (error.response?.status === 429 || error.response?.status === 403) {
                 currentApi.status = 'Sem Crédito';
@@ -354,7 +384,7 @@ class GeminiTTSPremium {
 
     // === CONVERSÃO PCM PARA WAV (baseado no código HTML) ===
     base64ToArrayBuffer(base64) {
-        const binaryString = atob(base64);
+        const binaryString = global.atob ? global.atob(base64) : Buffer.from(base64, 'base64').toString('binary');
         const len = binaryString.length;
         const bytes = new Uint8Array(len);
         for (let i = 0; i < len; i++) {
