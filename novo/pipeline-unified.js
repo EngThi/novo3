@@ -2,7 +2,7 @@
 /**
  * PIPELINE UNIFICADO v3.0 - Sistema Inteligente e Otimizado
  * Consolida todos os pipelines em uma interface única com detecção automática de capacidades
- * VERSÃO CORRIGIDA - Gemini TTS Premium habilitado
+ * VERSÃO CORRIGIDA - Gemini TTS Premium habilitado e diretórios corrigidos
  */
 
 require('dotenv').config({ path: require('path').join(__dirname, '..', '.env') });
@@ -91,18 +91,14 @@ class UnifiedPipeline {
     async detectCapabilities() {
         console.log('🔍 Detectando capacidades disponíveis...');
         
-        // Detectar Gemini APIs
-        try {
-            const geminiCreds = await this.credentialManager.getNextCredential('gemini');
+        // Detectar Gemini APIs - CORREÇÃO AQUI
+        const geminiKey = process.env.GEMINI_API_KEY;
+        if (geminiKey && geminiKey.length > 10) {
             this.capabilities.gemini_tts = true;
-            console.log('✅ Gemini TTS (Premium)');
-        } catch {
-            if (process.env.GEMINI_API_KEY) {
-                this.capabilities.gemini_tts = true;
-                console.log('✅ Gemini TTS (Environment)');
-            } else {
-                console.log('❌ Gemini TTS não disponível');
-            }
+            console.log(`✅ Gemini TTS (Environment) - Key: ${geminiKey.substring(0,10)}...`);
+        } else {
+            console.log('❌ Gemini TTS não disponível - API key não encontrada');
+            console.log(`   GEMINI_API_KEY: ${geminiKey ? 'PRESENTE MAS INVÁLIDA' : 'NÃO DEFINIDA'}`);
         }
         
         // Detectar Nano Banana
@@ -302,6 +298,10 @@ class UnifiedPipeline {
         
         console.log(`🚀 Executando pipeline no modo: ${this.mode.toUpperCase()}`);
         console.log(`📁 Diretório de execução: ${executionPath}`);
+        
+        // CRIAR DIRETÓRIO PRINCIPAL PRIMEIRO - CORREÇÃO AQUI
+        await fs.mkdir(executionPath, { recursive: true });
+        console.log(`📁 Diretório criado: ${executionPath}`);
         
         // Etapa 1: Descobrir conteúdo (com cache)
         let topic = await this.checkCache('topic_discovery', { date: new Date().toDateString() });
@@ -539,11 +539,14 @@ IMPORTANTE:
             console.log(`🎙️ Iniciando geração de áudio com ${this.capabilities.gemini_tts ? 'Gemini TTS Premium' : 'TTS Free'}`);
             
             if (this.capabilities.gemini_tts) {
-                // USAR GEMINI TTS PREMIUM DIRETAMENTE
+                // USAR GEMINI TTS PREMIUM DIRETAMENTE COM API KEY CORRIGIDA
                 const GeminiTTS = require('./modules/gemini-tts-premium');
+                
+                // Passar a API key diretamente para evitar problemas de carregamento
                 const tts = new GeminiTTS({ 
                     voice: this.config.default_voice,
-                    chunkSize: 800 
+                    chunkSize: 800,
+                    apiKey: process.env.GEMINI_API_KEY  // CORREÇÃO AQUI
                 });
                 
                 const result = await tts.generateFromScript(
@@ -570,8 +573,11 @@ IMPORTANTE:
                 } catch (fallbackError) {
                     console.warn('⚠️ Erro no TTS fallback:', fallbackError.message);
                     
-                    // Criar áudio "silencioso" mockado se tudo falhar
+                    // Criar áudio "silencioso" mockado se tudo falhar - CORREÇÃO DE DIRETÓRIO AQUI
                     const mockAudioPath = path.join(executionPath, `${executionId}_mock_audio.txt`);
+                    
+                    // GARANTIR QUE O DIRETÓRIO EXISTE
+                    await fs.mkdir(path.dirname(mockAudioPath), { recursive: true });
                     await fs.writeFile(mockAudioPath, `Mock audio file for script:\n\n${script.content}`);
                     
                     console.log('ℹ️ Gerado mock de áudio como texto');
@@ -587,8 +593,11 @@ IMPORTANTE:
         } catch (error) {
             console.error('❌ Erro na geração de áudio:', error.message);
             
-            // Criar mock como fallback absoluto
+            // Criar mock como fallback absoluto - COM CORREÇÃO DE DIRETÓRIO
             const mockAudioPath = path.join(executionPath, `${executionId}_error_mock.txt`);
+            
+            // GARANTIR QUE O DIRETÓRIO EXISTE
+            await fs.mkdir(path.dirname(mockAudioPath), { recursive: true });
             await fs.writeFile(mockAudioPath, `Audio generation failed:\n${error.message}\n\nScript:\n${script.content}`);
             
             return {
