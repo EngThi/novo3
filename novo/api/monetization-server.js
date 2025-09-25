@@ -4,7 +4,7 @@ const fs = require('fs').promises;
 const crypto = require('crypto');
 
 /**
- * Servidor de API Comercial - VERSÃO CORRIGIDA
+ * Servidor de API Comercial - VERSAO CORRIGIDA
  * Sistema funcional para monetizar o pipeline
  */
 class MonetizationServer {
@@ -53,7 +53,7 @@ class MonetizationServer {
     }
     
     setupRoutes() {
-        // Página principal
+        // Pagina principal
         this.app.get('/', (req, res) => {
             res.json({
                 service: 'Pipeline Video API',
@@ -64,14 +64,186 @@ class MonetizationServer {
             });
         });
         
-        // Endpoint de geração (SEM autenticação para teste)
+        // Endpoint de geracao (SEM autenticacao para teste)
         this.app.post('/api/generate', async (req, res) => {
             try {
                 const jobId = crypto.randomUUID();
                 const { template, batch_size = 1 } = req.body;
                 
                 if (!template) {
-                    return res.status(400).json({ error: 'Template é obrigatório' });
+                    return res.status(400).json({ error: 'Template eh obrigatorio' });
                 }
                 
-                console.log(`🎬 Novo job recebido: ${jobId}`);\n                console.log(`   Template: ${template}`);\n                console.log(`   Batch: ${batch_size}`);\n                \n                // Simular processamento assíncrono\n                setTimeout(() => {\n                    this.processJob(jobId, { template, batch_size });\n                }, 1000);\n                \n                res.json({\n                    job_id: jobId,\n                    status: 'processing',\n                    template: template,\n                    batch_size: batch_size,\n                    estimated_time: `${batch_size * 2} minutos`,\n                    message: 'Job iniciado com sucesso!'\n                });\n                \n            } catch (error) {\n                console.error('❌ Erro na API:', error.message);\n                res.status(500).json({ error: error.message });\n            }\n        });\n        \n        // Status do job\n        this.app.get('/api/status/:jobId', async (req, res) => {\n            const jobId = req.params.jobId;\n            \n            // Simular status\n            res.json({\n                job_id: jobId,\n                status: 'completed',\n                progress: 100,\n                result: {\n                    videos_generated: 1,\n                    quality_score: 8.7,\n                    total_time: '2.3 minutos',\n                    files: [\n                        `output/${jobId}/video_final.mp4`,\n                        `output/${jobId}/audio.wav`,\n                        `output/${jobId}/images/`\n                    ]\n                }\n            });\n        });\n        \n        // Pricing\n        this.app.get('/pricing', (req, res) => {\n            res.json({\n                tiers: this.pricingTiers,\n                currency: 'USD',\n                billing: 'monthly'\n            });\n        });\n        \n        // Admin simples\n        this.app.get('/admin', (req, res) => {\n            res.send(`\n<!DOCTYPE html>\n<html>\n<head>\n    <title>Pipeline API - Admin</title>\n    <style>\n        body { font-family: Arial; margin: 20px; background: #f0f2f5; }\n        .header { background: #1976d2; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }\n        .card { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }\n        .metric { font-size: 2rem; font-weight: bold; color: #1976d2; }\n        .label { color: #666; font-size: 0.9rem; }\n    </style>\n</head>\n<body>\n    <div class=\"header\">\n        <h1>🚀 Pipeline API - Admin Dashboard</h1>\n        <p>Sistema de monetização ativo</p>\n    </div>\n    \n    <div class=\"card\">\n        <div class=\"metric\">✅ ONLINE</div>\n        <div class=\"label\">Status do Sistema</div>\n    </div>\n    \n    <div class=\"card\">\n        <div class=\"metric\">1</div>\n        <div class=\"label\">Clientes Ativos</div>\n    </div>\n    \n    <div class=\"card\">\n        <div class=\"metric\">$0</div>\n        <div class=\"label\">Receita Mensal</div>\n    </div>\n    \n    <div class=\"card\">\n        <h3>🔑 API Demo:</h3>\n        <p><strong>Key:</strong> demo_key_123456789</p>\n        <p><strong>Tier:</strong> Free (10 vídeos/mês)</p>\n        <p><strong>Endpoint:</strong> POST /api/generate</p>\n    </div>\n    \n    <div class=\"card\">\n        <h3>📊 Templates Disponíveis:</h3>\n        <ul>\n            <li>misterios-brasileiros</li>\n            <li>curiosidades-cientificas</li>\n            <li>lendas-folclore</li>\n            <li>historias-urbanas</li>\n            <li>entretenimento-viral</li>\n        </ul>\n    </div>\n</body>\n</html>\n            `);\n        });\n    }\n\n    // === PROCESSAMENTO DE JOBS ===\n    async processJob(jobId, params) {\n        console.log(`🔄 Processando job ${jobId}...`);\n        \n        try {\n            // Simular processamento\n            await this.sleep(5000); // 5 segundos\n            \n            console.log(`✅ Job ${jobId} concluído com sucesso!`);\n            console.log(`   Template: ${params.template}`);\n            console.log(`   Vídeos: ${params.batch_size}`);\n            console.log(`   Qualidade estimada: 8.7/10`);\n            \n        } catch (error) {\n            console.error(`❌ Job ${jobId} falhou:`, error.message);\n        }\n    }\n    \n    // === DATABASE SIMPLES ===\n    async initializeDatabase() {\n        try {\n            await fs.mkdir(path.dirname(this.dbPath), { recursive: true });\n            console.log('📊 Database inicializada');\n        } catch (error) {\n            console.warn('⚠️ Erro na database:', error.message);\n        }\n    }\n    \n    sleep(ms) {\n        return new Promise(resolve => setTimeout(resolve, ms));\n    }\n    \n    // === INICIALIZAÇÃO ===\n    start() {\n        this.app.listen(this.port, () => {\n            console.log(`\\n💰 MONETIZATION API STARTED!`);\n            console.log(`🌐 API Base: http://localhost:${this.port}`);\n            console.log(`📋 Admin: http://localhost:${this.port}/admin`);\n            console.log(`📈 Pricing: http://localhost:${this.port}/pricing`);\n            console.log(`\\n🔑 Demo API Key: demo_key_123456789`);\n            console.log(`📝 Example Request:`);\n            console.log(`curl -X POST http://localhost:${this.port}/api/generate \\\\`);\n            console.log(`  -H \"Authorization: Bearer demo_key_123456789\" \\\\`);\n            console.log(`  -H \"Content-Type: application/json\" \\\\`);\n            console.log(`  -d '{\"template\":\"misterios-brasileiros\",\"batch_size\":1}'`);\n            console.log('\\n' + '='.repeat(60));\n        });\n        \n        return this.app;\n    }\n}\n\n// === EXECUÇÃO DIRETA ===\nif (require.main === module) {\n    const server = new MonetizationServer(4000);\n    server.start();\n}\n\nmodule.exports = MonetizationServer;
+                console.log(`🎬 Novo job recebido: ${jobId}`);
+                console.log(`   Template: ${template}`);
+                console.log(`   Batch: ${batch_size}`);
+                
+                // Simular processamento assincrono
+                setTimeout(() => {
+                    this.processJob(jobId, { template, batch_size });
+                }, 1000);
+                
+                res.json({
+                    job_id: jobId,
+                    status: 'processing',
+                    template: template,
+                    batch_size: batch_size,
+                    estimated_time: `${batch_size * 2} minutos`,
+                    message: 'Job iniciado com sucesso!'
+                });
+                
+            } catch (error) {
+                console.error('❌ Erro na API:', error.message);
+                res.status(500).json({ error: error.message });
+            }
+        });
+        
+        // Status do job
+        this.app.get('/api/status/:jobId', async (req, res) => {
+            const jobId = req.params.jobId;
+            
+            // Simular status
+            res.json({
+                job_id: jobId,
+                status: 'completed',
+                progress: 100,
+                result: {
+                    videos_generated: 1,
+                    quality_score: 8.7,
+                    total_time: '2.3 minutos',
+                    files: [
+                        `output/${jobId}/video_final.mp4`,
+                        `output/${jobId}/audio.wav`,
+                        `output/${jobId}/images/`
+                    ]
+                }
+            });
+        });
+        
+        // Pricing
+        this.app.get('/pricing', (req, res) => {
+            res.json({
+                tiers: this.pricingTiers,
+                currency: 'USD',
+                billing: 'monthly'
+            });
+        });
+        
+        // Admin simples
+        this.app.get('/admin', (req, res) => {
+            const htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Pipeline API - Admin</title>
+    <style>
+        body { font-family: Arial; margin: 20px; background: #f0f2f5; }
+        .header { background: #1976d2; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; margin: 10px 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .metric { font-size: 2rem; font-weight: bold; color: #1976d2; }
+        .label { color: #666; font-size: 0.9rem; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🚀 Pipeline API - Admin Dashboard</h1>
+        <p>Sistema de monetizacao ativo</p>
+    </div>
+    
+    <div class="card">
+        <div class="metric">✅ ONLINE</div>
+        <div class="label">Status do Sistema</div>
+    </div>
+    
+    <div class="card">
+        <div class="metric">1</div>
+        <div class="label">Clientes Ativos</div>
+    </div>
+    
+    <div class="card">
+        <div class="metric">$0</div>
+        <div class="label">Receita Mensal</div>
+    </div>
+    
+    <div class="card">
+        <h3>🔑 API Demo:</h3>
+        <p><strong>Key:</strong> demo_key_123456789</p>
+        <p><strong>Tier:</strong> Free (10 videos/mes)</p>
+        <p><strong>Endpoint:</strong> POST /api/generate</p>
+    </div>
+    
+    <div class="card">
+        <h3>📊 Templates Disponíveis:</h3>
+        <ul>
+            <li>misterios-brasileiros</li>
+            <li>curiosidades-cientificas</li>
+            <li>lendas-folclore</li>
+            <li>historias-urbanas</li>
+            <li>entretenimento-viral</li>
+        </ul>
+    </div>
+</body>
+</html>`;
+            res.send(htmlContent);
+        });
+    }
+
+    // === PROCESSAMENTO DE JOBS ===
+    async processJob(jobId, params) {
+        console.log(`🔄 Processando job ${jobId}...`);
+        
+        try {
+            // Simular processamento
+            await this.sleep(5000); // 5 segundos
+            
+            console.log(`✅ Job ${jobId} concluído com sucesso!`);
+            console.log(`   Template: ${params.template}`);
+            console.log(`   Videos: ${params.batch_size}`);
+            console.log(`   Qualidade estimada: 8.7/10`);
+            
+        } catch (error) {
+            console.error(`❌ Job ${jobId} falhou:`, error.message);
+        }
+    }
+    
+    // === DATABASE SIMPLES ===
+    async initializeDatabase() {
+        try {
+            await fs.mkdir(path.dirname(this.dbPath), { recursive: true });
+            console.log('📊 Database inicializada');
+        } catch (error) {
+            console.warn('⚠️ Erro na database:', error.message);
+        }
+    }
+    
+    sleep(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+    
+    // === INICIALIZACAO ===
+    start() {
+        this.app.listen(this.port, () => {
+            console.log('\n💰 MONETIZATION API STARTED!');
+            console.log(`🌐 API Base: http://localhost:${this.port}`);
+            console.log(`📋 Admin: http://localhost:${this.port}/admin`);
+            console.log(`📈 Pricing: http://localhost:${this.port}/pricing`);
+            console.log('\n🔑 Demo API Key: demo_key_123456789');
+            console.log('📝 Example Request:');
+            console.log(`curl -X POST http://localhost:${this.port}/api/generate \\`);
+            console.log('  -H "Authorization: Bearer demo_key_123456789" \\');
+            console.log('  -H "Content-Type: application/json" \\');
+            console.log('  -d \'{"template":"misterios-brasileiros","batch_size":1}\'');
+            console.log('\n' + '='.repeat(60));
+        });
+        
+        return this.app;
+    }
+}
+
+// === EXECUCAO DIRETA ===
+if (require.main === module) {
+    const server = new MonetizationServer(4000);
+    server.start();
+}
+
+module.exports = MonetizationServer;
