@@ -17,9 +17,6 @@ class DashboardServer {
     }
     
     setupMiddleware() {
-        // Servir arquivos estáticos
-        this.app.use('/static', express.static(path.join(__dirname, 'static')));
-        
         // Parse JSON
         this.app.use(express.json());
         
@@ -48,17 +45,7 @@ class DashboardServer {
             }
         });
         
-        // API de métricas em tempo real
-        this.app.get('/api/realtime', async (req, res) => {
-            try {
-                const realtime = await this.getRealtimeMetrics();
-                res.json(realtime);
-            } catch (error) {
-                res.status(500).json({ error: error.message });
-            }
-        });
-        
-        // API de histórico diário
+        // API de histórico
         this.app.get('/api/history', async (req, res) => {
             try {
                 const history = await this.getDailyHistory();
@@ -71,8 +58,7 @@ class DashboardServer {
     
     // === HTML DA PÁGINA PRINCIPAL ===
     getMainHTML() {
-        return `
-<!DOCTYPE html>
+        return `<!DOCTYPE html>
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
@@ -223,54 +209,53 @@ class DashboardServer {
                     
             } catch (error) {
                 console.error('Erro ao carregar métricas:', error);
-                document.getElementById('metricsGrid').innerHTML = 
-                    '<div class="metric-card"><div class="metric-value">❌</div><div class="metric-label">Erro ao carregar</div></div>';
+                const grid = document.getElementById('metricsGrid');
+                grid.innerHTML = '<div class="metric-card"><div class="metric-value">❌</div><div class="metric-label">Erro ao carregar</div></div>';
             }
         }
         
         function displayMetrics(data) {
             const grid = document.getElementById('metricsGrid');
             
-            const successRate = ((data.successful_executions / data.total_executions) * 100).toFixed(1);
+            const successRate = data.total_executions > 0 ? ((data.successful_executions / data.total_executions) * 100).toFixed(1) : 0;
             const avgTime = (data.avg_execution_time / 1000).toFixed(1);
             
             let statusClass = 'online';
             if (successRate < 50) statusClass = 'error';
             else if (successRate < 80) statusClass = 'warning';
             
-            grid.innerHTML = `
-                <div class="metric-card">
-                    <div class="metric-value">
-                        <span class="status ${statusClass}"></span>${data.total_executions}
-                    </div>
-                    <div class="metric-label">Total de Execuções</div>
-                </div>
+            grid.innerHTML = 
+                '<div class="metric-card">' +
+                    '<div class="metric-value">' +
+                        '<span class="status ' + statusClass + '"></span>' + data.total_executions +
+                    '</div>' +
+                    '<div class="metric-label">Total de Execuções</div>' +
+                '</div>' +
                 
-                <div class="metric-card">
-                    <div class="metric-value">${successRate}%</div>
-                    <div class="metric-label">Taxa de Sucesso</div>
-                </div>
+                '<div class="metric-card">' +
+                    '<div class="metric-value">' + successRate + '%</div>' +
+                    '<div class="metric-label">Taxa de Sucesso</div>' +
+                '</div>' +
                 
-                <div class="metric-card">
-                    <div class="metric-value">${data.avg_quality.toFixed(1)}/10</div>
-                    <div class="metric-label">Qualidade Média</div>
-                </div>
+                '<div class="metric-card">' +
+                    '<div class="metric-value">' + data.avg_quality.toFixed(1) + '/10</div>' +
+                    '<div class="metric-label">Qualidade Média</div>' +
+                '</div>' +
                 
-                <div class="metric-card">
-                    <div class="metric-value">${avgTime}s</div>
-                    <div class="metric-label">Tempo Médio</div>
-                </div>
+                '<div class="metric-card">' +
+                    '<div class="metric-value">' + avgTime + 's</div>' +
+                    '<div class="metric-label">Tempo Médio</div>' +
+                '</div>' +
                 
-                <div class="metric-card">
-                    <div class="metric-value">$${data.total_cost.toFixed(2)}</div>
-                    <div class="metric-label">Custo Total</div>
-                </div>
+                '<div class="metric-card">' +
+                    '<div class="metric-value">$' + data.total_cost.toFixed(2) + '</div>' +
+                    '<div class="metric-label">Custo Total</div>' +
+                '</div>' +
                 
-                <div class="metric-card">
-                    <div class="metric-value">${data.quality_distribution.excellent}</div>
-                    <div class="metric-label">Vídeos Excelentes</div>
-                </div>
-            `;
+                '<div class="metric-card">' +
+                    '<div class="metric-value">' + data.quality_distribution.excellent + '</div>' +
+                    '<div class="metric-label">Vídeos Excelentes</div>' +
+                '</div>';
         }
         
         function displayHistory(data) {
@@ -284,18 +269,17 @@ class DashboardServer {
             // Gráfico simples em ASCII/texto
             let chartHTML = '<div style="font-family: monospace; font-size: 12px; line-height: 1.2;">';
             
-            data.forEach((day, index) => {
+            data.forEach(function(day, index) {
                 const date = new Date(day.date).toLocaleDateString('pt-BR');
                 const successRate = day.executions > 0 ? (day.successes / day.executions * 100) : 0;
                 const barWidth = Math.max(1, successRate);
                 
-                chartHTML += `
-                    <div style="margin: 5px 0; display: flex; align-items: center;">
-                        <span style="width: 80px; display: inline-block;">${date}</span>
-                        <div style="width: ${barWidth * 2}px; height: 15px; background: linear-gradient(90deg, #4CAF50, #8BC34A); margin-right: 10px;"></div>
-                        <span>${day.executions} exec (${successRate.toFixed(0)}%)</span>
-                    </div>
-                `;
+                chartHTML += 
+                    '<div style="margin: 5px 0; display: flex; align-items: center;">' +
+                        '<span style="width: 80px; display: inline-block;">' + date + '</span>' +
+                        '<div style="width: ' + (barWidth * 2) + 'px; height: 15px; background: linear-gradient(90deg, #4CAF50, #8BC34A); margin-right: 10px;"></div>' +
+                        '<span>' + day.executions + ' exec (' + successRate.toFixed(0) + '%)</span>' +
+                    '</div>';
             });
             
             chartHTML += '</div>';
@@ -309,8 +293,7 @@ class DashboardServer {
         setInterval(loadMetrics, 30000);
     </script>
 </body>
-</html>
-        `;
+</html>`;
     }
     
     // === COLETA DE MÉTRICAS ===
@@ -374,7 +357,7 @@ class DashboardServer {
                 }
                 
                 // Estimar custo
-                if (metric.components?.audio?.service === 'gemini-tts-premium') {
+                if (metric.components && metric.components.audio && metric.components.audio.service === 'gemini-tts-premium') {
                     const duration = metric.components.audio.duration || 180;
                     stats.total_cost += (duration / 60) * 0.08;
                 }
@@ -393,16 +376,6 @@ class DashboardServer {
         }
         
         return stats;
-    }
-    
-    async getRealtimeMetrics() {
-        // Métricas em tempo real (implementação futura)
-        return {
-            status: 'online',
-            current_executions: 0,
-            queue_size: 0,
-            last_execution: null
-        };
     }
     
     async getDailyHistory() {
