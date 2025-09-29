@@ -69,4 +69,495 @@ class AIScriptGenerator {
             });
         }
         
-        try {\n            // 1. Research Phase - Coletar dados relevantes\n            const research = await this.conductResearch(topic, style);\n            \n            // 2. Structure Planning - Definir estrutura\n            const structure = this.planStructure(style, duration);\n            \n            // 3. Content Generation - Gerar conteúdo\n            const content = await this.generateContent({\n                topic,\n                research,\n                structure,\n                style,\n                duration,\n                targetAudience\n            });\n            \n            // 4. SEO Optimization - Otimizar para SEO\n            const seoData = this.generateSEO(topic, content, style);\n            \n            // 5. Timing Analysis - Calcular timing\n            const timing = this.calculateTiming(content, duration);\n            \n            // 6. Quality Check - Verificar qualidade\n            const quality = this.analyzeQuality(content, style);\n            \n            const processingTime = Date.now() - startTime;\n            \n            const result = {\n                success: true,\n                script: {\n                    title: seoData.title,\n                    content,\n                    structure,\n                    style,\n                    duration: duration,\n                    targetAudience\n                },\n                seo: seoData,\n                timing,\n                quality,\n                research: research.summary,\n                metadata: {\n                    generatedAt: new Date().toISOString(),\n                    processingTime,\n                    version: '2.0',\n                    aiEngine: 'gpt-4'\n                }\n            };\n            \n            // Cache resultado\n            if (this.cache) {\n                await this.cache.set(`script:${topic}:${style}`, result);\n            }\n            \n            // Log sucesso\n            if (this.logger.info) {\n                this.logger.info('AI Script generated successfully', {\n                    processingTime,\n                    contentLength: content.length,\n                    qualityScore: quality.score\n                });\n            }\n            \n            return result;\n            \n        } catch (error) {\n            if (this.logger.error) {\n                this.logger.error('AI Script generation failed', error);\n            }\n            \n            throw {\n                success: false,\n                error: error.message,\n                processingTime: Date.now() - startTime\n            };\n        }\n    }\n    \n    /**\n     * Research automático sobre o tópico\n     */\n    async conductResearch(topic, style) {\n        // Simulação de research (substituir por API real)\n        const mockResearch = {\n            facts: [\n                `${topic} é uma área em rápido crescimento com impacto global`,\n                `Especialistas indicam tendências importantes para 2024-2025`,\n                `Dados recentes mostram crescimento de 40% no setor`\n            ],\n            statistics: {\n                marketSize: '$2.5 bilhões',\n                growthRate: '40% ao ano',\n                adoptionRate: '65% das empresas'\n            },\n            trends: ['Automatização', 'Sustentabilidade', 'Personalização'],\n            experts: ['Dr. Ana Silva (MIT)', 'Prof. João Santos (USP)'],\n            summary: `Pesquisa abrangente sobre ${topic} com foco em ${style}`\n        };\n        \n        // Cache research\n        if (this.cache) {\n            await this.cache.set(`research:${topic}`, mockResearch);\n        }\n        \n        return mockResearch;\n    }\n    \n    /**\n     * Planejar estrutura do roteiro\n     */\n    planStructure(style, duration) {\n        const template = this.templates[style];\n        if (!template) {\n            throw new Error(`Style '${style}' not supported`);\n        }\n        \n        const durationKey = duration === 'short' ? 'short' : duration === 'long' ? 'long' : 'medium';\n        const totalSeconds = template.avgDuration[durationKey];\n        \n        // Distribuir tempo entre seções\n        const sections = template.structure;\n        const timePerSection = Math.floor(totalSeconds / sections.length);\n        \n        return {\n            sections: sections.map((section, index) => ({\n                name: section,\n                estimatedTime: timePerSection,\n                position: index + 1,\n                totalSections: sections.length\n            })),\n            totalDuration: totalSeconds,\n            style: template.tone,\n            hooks: template.hooks\n        };\n    }\n    \n    /**\n     * Gerar conteúdo do roteiro\n     */\n    async generateContent(params) {\n        const { topic, research, structure, style, targetAudience } = params;\n        \n        // Simulação de geração com GPT-4 (substituir por API real)\n        const mockContent = {\n            intro: {\n                hook: `Você sabia que ${topic} está revolucionando nossa sociedade?`,\n                context: `Nos últimos anos, ${topic} tem demonstrado um crescimento impressionante.`,\n                thesis: `Hoje vou mostrar como ${topic} está mudando o mundo e o que isso significa para você.`\n            },\n            body: {\n                section1: `${research.facts[0]} Isso significa que estamos vivenciando uma transformação sem precedentes.`,\n                section2: `Com um crescimento de ${research.statistics.growthRate}, ${topic} está se tornando essencial.`,\n                section3: `As principais tendências incluem: ${research.trends.join(', ')}.`,\n                examples: `Por exemplo, ${research.statistics.adoptionRate} já adotaram essas tecnologias.`\n            },\n            conclusion: {\n                recap: `Resumindo: ${topic} está transformando nossa realidade através de ${research.trends[0]}.`,\n                cta: `Se você quer se manter atualizado sobre ${topic}, inscreva-se no canal e ative o sininho!`,\n                nextSteps: `No próximo vídeo, vamos explorar ainda mais sobre ${research.trends[1]}.`\n            }\n        };\n        \n        // Converter para texto corrido\n        const fullScript = [\n            mockContent.intro.hook,\n            mockContent.intro.context,\n            mockContent.intro.thesis,\n            '',\n            mockContent.body.section1,\n            mockContent.body.section2,\n            mockContent.body.section3,\n            mockContent.body.examples,\n            '',\n            mockContent.conclusion.recap,\n            mockContent.conclusion.cta,\n            mockContent.conclusion.nextSteps\n        ].join(' ');\n        \n        return fullScript;\n    }\n    \n    /**\n     * Gerar dados SEO otimizados\n     */\n    generateSEO(topic, content, style) {\n        const baseKeywords = this.seoKeywords[this.detectCategory(topic)];\n        const contentKeywords = this.extractKeywords(content);\n        \n        return {\n            title: this.generateSEOTitle(topic, style),\n            description: this.generateDescription(content),\n            tags: [...baseKeywords, ...contentKeywords].slice(0, 10),\n            keywords: this.generateKeywords(topic, contentKeywords),\n            thumbnail: {\n                title: this.generateThumbnailTitle(topic),\n                elements: ['texto grande', 'cores vibrantes', 'expressão facial'],\n                style: 'clickbait profissional'\n            },\n            socialMedia: {\n                hashtags: this.generateHashtags(topic, baseKeywords),\n                tweetText: `Novo vídeo sobre ${topic}! ${this.generateThumbnailTitle(topic)} 🚀`,\n                linkedinPost: `Acabei de publicar um conteúdo completo sobre ${topic}. Confira!`\n            }\n        };\n    }\n    \n    /**\n     * Calcular timing detalhado\n     */\n    calculateTiming(content, duration) {\n        const wordsPerMinute = 150; // Velocidade média de fala\n        const words = content.split(' ').length;\n        const estimatedDuration = Math.ceil((words / wordsPerMinute) * 60); // em segundos\n        \n        return {\n            estimatedDuration,\n            wordCount: words,\n            readingSpeed: wordsPerMinute,\n            sections: {\n                intro: Math.floor(estimatedDuration * 0.15),\n                body: Math.floor(estimatedDuration * 0.70),\n                conclusion: Math.floor(estimatedDuration * 0.15)\n            },\n            pacing: estimatedDuration < 300 ? 'rápido' : estimatedDuration > 600 ? 'detalhado' : 'balanceado'\n        };\n    }\n    \n    /**\n     * Analisar qualidade do roteiro\n     */\n    analyzeQuality(content, style) {\n        const template = this.templates[style];\n        \n        // Critérios de qualidade\n        const criteria = {\n            length: this.checkLength(content),\n            hooks: this.checkHooks(content, template.hooks),\n            structure: this.checkStructure(content, template.structure),\n            engagement: this.checkEngagement(content),\n            readability: this.checkReadability(content)\n        };\n        \n        const score = Object.values(criteria).reduce((sum, score) => sum + score, 0) / Object.keys(criteria).length;\n        \n        return {\n            score: Math.round(score),\n            criteria,\n            recommendations: this.generateRecommendations(criteria, style),\n            grade: score >= 90 ? 'Excelente' : score >= 80 ? 'Bom' : score >= 70 ? 'Regular' : 'Precisa melhorar'\n        };\n    }\n    \n    /**\n     * Gerar múltiplas variações do roteiro\n     */\n    async generateVariations(topic, style, count = 3) {\n        const variations = [];\n        \n        const approaches = ['informativo', 'emocional', 'prático'];\n        \n        for (let i = 0; i < count; i++) {\n            const approach = approaches[i % approaches.length];\n            \n            const variation = await this.generateScript({\n                topic,\n                style,\n                approach,\n                variationId: i + 1\n            });\n            \n            variations.push({\n                id: i + 1,\n                approach,\n                script: variation.script,\n                seo: variation.seo,\n                quality: variation.quality,\n                estimatedViews: this.predictViews(variation)\n            });\n        }\n        \n        // Ranquear por qualidade e potencial de views\n        variations.sort((a, b) => \n            (b.quality.score * 0.6 + b.estimatedViews * 0.4) - \n            (a.quality.score * 0.6 + a.estimatedViews * 0.4)\n        );\n        \n        return {\n            topic,\n            style,\n            variations,\n            recommendation: variations[0],\n            generatedAt: new Date().toISOString()\n        };\n    }\n    \n    // Helper methods\n    detectCategory(topic) {\n        const techKeywords = ['ia', 'ai', 'tecnologia', 'digital', 'inovação'];\n        const businessKeywords = ['negócio', 'empresa', 'mercado', 'vendas'];\n        const educationKeywords = ['aprender', 'tutorial', 'curso', 'ensinar'];\n        \n        const topicLower = topic.toLowerCase();\n        \n        if (techKeywords.some(k => topicLower.includes(k))) return 'tech';\n        if (businessKeywords.some(k => topicLower.includes(k))) return 'business';\n        if (educationKeywords.some(k => topicLower.includes(k))) return 'education';\n        \n        return 'entertainment';\n    }\n    \n    extractKeywords(content) {\n        // Análise simples de keywords (pode ser melhorada com NLP)\n        const words = content.toLowerCase().split(/\\W+/);\n        const commonWords = ['o', 'a', 'de', 'do', 'da', 'em', 'um', 'uma', 'para', 'com', 'não', 'que', 'se', 'na', 'no'];\n        \n        const wordCount = {};\n        words.filter(word => \n            word.length > 3 && \n            !commonWords.includes(word)\n        ).forEach(word => {\n            wordCount[word] = (wordCount[word] || 0) + 1;\n        });\n        \n        return Object.entries(wordCount)\n            .sort(([,a], [,b]) => b - a)\n            .slice(0, 10)\n            .map(([word]) => word);\n    }\n    \n    generateSEOTitle(topic, style) {\n        const templates = {\n            educativo: [`Como ${topic} Funciona - Guia Completo`, `Tudo Sobre ${topic} - Explicação Detalhada`],\n            entretenimento: [`${topic} - O Que Ninguém Te Contou`, `A Verdade Sobre ${topic} Que Vai Te Chocar`],\n            news: [`${topic} - Últimas Notícias e Updates`, `${topic} - O Que Mudou em 2024`],\n            tutorial: [`${topic} - Tutorial Completo Passo a Passo`, `Aprenda ${topic} em 10 Minutos`]\n        };\n        \n        const options = templates[style] || templates.educativo;\n        return options[Math.floor(Math.random() * options.length)];\n    }\n    \n    generateDescription(content) {\n        const firstSentences = content.split('.').slice(0, 2).join('.');\n        return firstSentences.substring(0, 150) + '... Inscreva-se para mais conteúdo!';\n    }\n    \n    generateKeywords(topic, contentKeywords) {\n        return [topic, ...contentKeywords].slice(0, 8);\n    }\n    \n    generateThumbnailTitle(topic) {\n        const templates = [\n            `${topic.toUpperCase()}`,\n            `NOVO: ${topic}`,\n            `${topic} 2024`,\n            `${topic} REVELADO`\n        ];\n        return templates[Math.floor(Math.random() * templates.length)];\n    }\n    \n    generateHashtags(topic, keywords) {\n        const topicTag = '#' + topic.replace(/\\s+/g, '').toLowerCase();\n        const keywordTags = keywords.slice(0, 4).map(k => '#' + k);\n        return [topicTag, ...keywordTags, '#viral', '#2024'];\n    }\n    \n    checkLength(content) {\n        const length = content.length;\n        if (length > 800 && length < 2000) return 95;\n        if (length > 600 && length < 2500) return 85;\n        return 70;\n    }\n    \n    checkHooks(content, hooks) {\n        const hasHooks = hooks.some(hook => \n            content.toLowerCase().includes(hook.toLowerCase())\n        );\n        return hasHooks ? 95 : 75;\n    }\n    \n    checkStructure(content, requiredSections) {\n        // Verificar se tem estrutura básica (intro, body, conclusion)\n        const hasIntro = content.length > 100;\n        const hasBody = content.split('.').length > 5;\n        const hasConclusion = content.toLowerCase().includes('resumindo') || \n                             content.toLowerCase().includes('concluindo');\n        \n        const structureScore = (hasIntro ? 30 : 0) + (hasBody ? 40 : 0) + (hasConclusion ? 30 : 0);\n        return Math.min(structureScore + 10, 100);\n    }\n    \n    checkEngagement(content) {\n        const engagementWords = ['você', 'seu', 'sua', 'vamos', 'imagine', 'pense', 'veja'];\n        const engagementCount = engagementWords.reduce((count, word) => \n            count + (content.toLowerCase().match(new RegExp(word, 'g')) || []).length, 0\n        );\n        \n        return Math.min((engagementCount * 10) + 60, 100);\n    }\n    \n    checkReadability(content) {\n        const sentences = content.split('.').filter(s => s.trim().length > 0);\n        const avgSentenceLength = sentences.reduce((sum, s) => sum + s.split(' ').length, 0) / sentences.length;\n        \n        // Sentenças ideais: 15-20 palavras\n        if (avgSentenceLength >= 15 && avgSentenceLength <= 20) return 95;\n        if (avgSentenceLength >= 10 && avgSentenceLength <= 25) return 85;\n        return 75;\n    }\n    \n    generateRecommendations(criteria, style) {\n        const recommendations = [];\n        \n        if (criteria.length < 80) {\n            recommendations.push('Aumentar o conteúdo para melhor engajamento');\n        }\n        if (criteria.hooks < 80) {\n            recommendations.push(`Adicionar mais hooks do estilo ${style}`);\n        }\n        if (criteria.engagement < 80) {\n            recommendations.push('Usar mais linguagem direta e pessoal');\n        }\n        if (criteria.readability < 80) {\n            recommendations.push('Simplificar sentenças para melhor compreensão');\n        }\n        \n        return recommendations;\n    }\n    \n    predictViews(scriptData) {\n        // Algoritmo simples de predição (pode ser melhorado com ML)\n        let score = 0;\n        \n        // Qualidade do script\n        score += scriptData.quality.score * 0.4;\n        \n        // SEO optimization\n        score += scriptData.seo.tags.length * 2;\n        \n        // Engagement factors\n        if (scriptData.script.content.toLowerCase().includes('você')) score += 10;\n        if (scriptData.seo.title.includes('Como')) score += 15;\n        if (scriptData.seo.title.includes('2024')) score += 10;\n        \n        // Normalizar para views estimadas\n        return Math.max(Math.floor(score * 100), 1000);\n    }\n    \n    /**\n     * Health check do gerador\n     */\n    async healthCheck() {\n        return {\n            status: 'healthy',\n            service: 'AI Script Generator',\n            features: {\n                styles: Object.keys(this.templates),\n                seoOptimization: true,\n                qualityAnalysis: true,\n                multipleVariations: true,\n                researchIntegration: true\n            },\n            performance: {\n                avgGenerationTime: '2-5 seconds',\n                cacheEnabled: !!this.cache,\n                supportedLanguages: ['português']\n            }\n        };\n    }\n    \n    /**\n     * Obter estatísticas do gerador\n     */\n    getStats() {\n        return {\n            supportedStyles: Object.keys(this.templates),\n            avgQualityScore: 85,\n            generationSuccess: '98%',\n            avgProcessingTime: '3.2s',\n            featuresEnabled: [\n                'SEO Optimization',\n                'Quality Analysis', \n                'Multiple Variations',\n                'Research Integration',\n                'Timing Analysis'\n            ]\n        };\n    }\n}\n\nmodule.exports = { AIScriptGenerator };"
+        try {
+            // 1. Research Phase - Coletar dados relevantes
+            const research = await this.conductResearch(topic, style);
+            
+            // 2. Structure Planning - Definir estrutura
+            const structure = this.planStructure(style, duration);
+            
+            // 3. Content Generation - Gerar conteúdo
+            const content = await this.generateContent({
+                topic,
+                research,
+                structure,
+                style,
+                duration,
+                targetAudience
+            });
+            
+            // 4. SEO Optimization - Otimizar para SEO
+            const seoData = this.generateSEO(topic, content, style);
+            
+            // 5. Timing Analysis - Calcular timing
+            const timing = this.calculateTiming(content, duration);
+            
+            // 6. Quality Check - Verificar qualidade
+            const quality = this.analyzeQuality(content, style);
+            
+            const processingTime = Date.now() - startTime;
+            
+            const result = {
+                success: true,
+                script: {
+                    title: seoData.title,
+                    content,
+                    structure,
+                    style,
+                    duration: duration,
+                    targetAudience
+                },
+                seo: seoData,
+                timing,
+                quality,
+                research: research.summary,
+                metadata: {
+                    generatedAt: new Date().toISOString(),
+                    processingTime,
+                    version: '2.0',
+                    aiEngine: 'gpt-4'
+                }
+            };
+            
+            // Cache resultado
+            if (this.cache) {
+                await this.cache.set(`script:${topic}:${style}`, result);
+            }
+            
+            // Log sucesso
+            if (this.logger.info) {
+                this.logger.info('AI Script generated successfully', {
+                    processingTime,
+                    contentLength: content.length,
+                    qualityScore: quality.score
+                });
+            }
+            
+            return result;
+            
+        } catch (error) {
+            if (this.logger.error) {
+                this.logger.error('AI Script generation failed', error);
+            }
+            
+            throw {
+                success: false,
+                error: error.message,
+                processingTime: Date.now() - startTime
+            };
+        }
+    }
+    
+    /**
+     * Research automático sobre o tópico
+     */
+    async conductResearch(topic, style) {
+        // Simulação de research (substituir por API real)
+        const mockResearch = {
+            facts: [
+                `${topic} é uma área em rápido crescimento com impacto global`,
+                `Especialistas indicam tendências importantes para 2024-2025`,
+                `Dados recentes mostram crescimento de 40% no setor`
+            ],
+            statistics: {
+                marketSize: '$2.5 bilhões',
+                growthRate: '40% ao ano',
+                adoptionRate: '65% das empresas'
+            },
+            trends: ['Automatização', 'Sustentabilidade', 'Personalização'],
+            experts: ['Dr. Ana Silva (MIT)', 'Prof. João Santos (USP)'],
+            summary: `Pesquisa abrangente sobre ${topic} com foco em ${style}`
+        };
+        
+        // Cache research
+        if (this.cache) {
+            await this.cache.set(`research:${topic}`, mockResearch);
+        }
+        
+        return mockResearch;
+    }
+    
+    /**
+     * Planejar estrutura do roteiro
+     */
+    planStructure(style, duration) {
+        const template = this.templates[style];
+        if (!template) {
+            throw new Error(`Style '${style}' not supported`);
+        }
+        
+        const durationKey = duration === 'short' ? 'short' : duration === 'long' ? 'long' : 'medium';
+        const totalSeconds = template.avgDuration[durationKey];
+        
+        // Distribuir tempo entre seções
+        const sections = template.structure;
+        const timePerSection = Math.floor(totalSeconds / sections.length);
+        
+        return {
+            sections: sections.map((section, index) => ({
+                name: section,
+                estimatedTime: timePerSection,
+                position: index + 1,
+                totalSections: sections.length
+            })),
+            totalDuration: totalSeconds,
+            style: template.tone,
+            hooks: template.hooks
+        };
+    }
+    
+    /**
+     * Gerar conteúdo do roteiro
+     */
+    async generateContent(params) {
+        const { topic, research, structure, style, targetAudience } = params;
+        
+        // Simulação de geração com GPT-4 (substituir por API real)
+        const mockContent = {
+            intro: {
+                hook: `Você sabia que ${topic} está revolucionando nossa sociedade?`,
+                context: `Nos últimos anos, ${topic} tem demonstrado um crescimento impressionante.`,
+                thesis: `Hoje vou mostrar como ${topic} está mudando o mundo e o que isso significa para você.`
+            },
+            body: {
+                section1: `${research.facts[0]} Isso significa que estamos vivenciando uma transformação sem precedentes.`,
+                section2: `Com um crescimento de ${research.statistics.growthRate}, ${topic} está se tornando essencial.`,
+                section3: `As principais tendências incluem: ${research.trends.join(', ')}.`,
+                examples: `Por exemplo, ${research.statistics.adoptionRate} já adotaram essas tecnologias.`
+            },
+            conclusion: {
+                recap: `Resumindo: ${topic} está transformando nossa realidade através de ${research.trends[0]}.`,
+                cta: `Se você quer se manter atualizado sobre ${topic}, inscreva-se no canal e ative o sininho!`,
+                nextSteps: `No próximo vídeo, vamos explorar ainda mais sobre ${research.trends[1]}.`
+            }
+        };
+        
+        // Converter para texto corrido
+        const fullScript = [
+            mockContent.intro.hook,
+            mockContent.intro.context,
+            mockContent.intro.thesis,
+            '',
+            mockContent.body.section1,
+            mockContent.body.section2,
+            mockContent.body.section3,
+            mockContent.body.examples,
+            '',
+            mockContent.conclusion.recap,
+            mockContent.conclusion.cta,
+            mockContent.conclusion.nextSteps
+        ].join(' ');
+        
+        return fullScript;
+    }
+    
+    /**
+     * Gerar dados SEO otimizados
+     */
+    generateSEO(topic, content, style) {
+        const baseKeywords = this.seoKeywords[this.detectCategory(topic)];
+        const contentKeywords = this.extractKeywords(content);
+        
+        return {
+            title: this.generateSEOTitle(topic, style),
+            description: this.generateDescription(content),
+            tags: [...baseKeywords, ...contentKeywords].slice(0, 10),
+            keywords: this.generateKeywords(topic, contentKeywords),
+            thumbnail: {
+                title: this.generateThumbnailTitle(topic),
+                elements: ['texto grande', 'cores vibrantes', 'expressão facial'],
+                style: 'clickbait profissional'
+            },
+            socialMedia: {
+                hashtags: this.generateHashtags(topic, baseKeywords),
+                tweetText: `Novo vídeo sobre ${topic}! ${this.generateThumbnailTitle(topic)} 🚀`,
+                linkedinPost: `Acabei de publicar um conteúdo completo sobre ${topic}. Confira!`
+            }
+        };
+    }
+    
+    /**
+     * Calcular timing detalhado
+     */
+    calculateTiming(content, duration) {
+        const wordsPerMinute = 150; // Velocidade média de fala
+        const words = content.split(' ').length;
+        const estimatedDuration = Math.ceil((words / wordsPerMinute) * 60); // em segundos
+        
+        return {
+            estimatedDuration,
+            wordCount: words,
+            readingSpeed: wordsPerMinute,
+            sections: {
+                intro: Math.floor(estimatedDuration * 0.15),
+                body: Math.floor(estimatedDuration * 0.70),
+                conclusion: Math.floor(estimatedDuration * 0.15)
+            },
+            pacing: estimatedDuration < 300 ? 'rápido' : estimatedDuration > 600 ? 'detalhado' : 'balanceado'
+        };
+    }
+    
+    /**
+     * Analisar qualidade do roteiro
+     */
+    analyzeQuality(content, style) {
+        const template = this.templates[style];
+        
+        // Critérios de qualidade
+        const criteria = {
+            length: this.checkLength(content),
+            hooks: this.checkHooks(content, template.hooks),
+            structure: this.checkStructure(content, template.structure),
+            engagement: this.checkEngagement(content),
+            readability: this.checkReadability(content)
+        };
+        
+        const score = Object.values(criteria).reduce((sum, score) => sum + score, 0) / Object.keys(criteria).length;
+        
+        return {
+            score: Math.round(score),
+            criteria,
+            recommendations: this.generateRecommendations(criteria, style),
+            grade: score >= 90 ? 'Excelente' : score >= 80 ? 'Bom' : score >= 70 ? 'Regular' : 'Precisa melhorar'
+        };
+    }
+    
+    /**
+     * Gerar múltiplas variações do roteiro
+     */
+    async generateVariations(topic, style, count = 3) {
+        const variations = [];
+        
+        const approaches = ['informativo', 'emocional', 'prático'];
+        
+        for (let i = 0; i < count; i++) {
+            const approach = approaches[i % approaches.length];
+            
+            const variation = await this.generateScript({
+                topic,
+                style,
+                approach,
+                variationId: i + 1
+            });
+            
+            variations.push({
+                id: i + 1,
+                approach,
+                script: variation.script,
+                seo: variation.seo,
+                quality: variation.quality,
+                estimatedViews: this.predictViews(variation)
+            });
+        }
+        
+        // Ranquear por qualidade e potencial de views
+        variations.sort((a, b) => 
+            (b.quality.score * 0.6 + b.estimatedViews * 0.4) - 
+            (a.quality.score * 0.6 + a.estimatedViews * 0.4)
+        );
+        
+        return {
+            topic,
+            style,
+            variations,
+            recommendation: variations[0],
+            generatedAt: new Date().toISOString()
+        };
+    }
+    
+    // Helper methods
+    detectCategory(topic) {
+        const techKeywords = ['ia', 'ai', 'tecnologia', 'digital', 'inovação'];
+        const businessKeywords = ['negócio', 'empresa', 'mercado', 'vendas'];
+        const educationKeywords = ['aprender', 'tutorial', 'curso', 'ensinar'];
+        
+        const topicLower = topic.toLowerCase();
+        
+        if (techKeywords.some(k => topicLower.includes(k))) return 'tech';
+        if (businessKeywords.some(k => topicLower.includes(k))) return 'business';
+        if (educationKeywords.some(k => topicLower.includes(k))) return 'education';
+        
+        return 'entertainment';
+    }
+    
+    extractKeywords(content) {
+        // Análise simples de keywords (pode ser melhorada com NLP)
+        const words = content.toLowerCase().split(/\W+/);
+        const commonWords = ['o', 'a', 'de', 'do', 'da', 'em', 'um', 'uma', 'para', 'com', 'não', 'que', 'se', 'na', 'no'];
+        
+        const wordCount = {};
+        words.filter(word => 
+            word.length > 3 && 
+            !commonWords.includes(word)
+        ).forEach(word => {
+            wordCount[word] = (wordCount[word] || 0) + 1;
+        });
+        
+        return Object.entries(wordCount)
+            .sort(([,a], [,b]) => b - a)
+            .slice(0, 10)
+            .map(([word]) => word);
+    }
+    
+    generateSEOTitle(topic, style) {
+        const templates = {
+            educativo: [`Como ${topic} Funciona - Guia Completo`, `Tudo Sobre ${topic} - Explicação Detalhada`],
+            entretenimento: [`${topic} - O Que Ninguém Te Contou`, `A Verdade Sobre ${topic} Que Vai Te Chocar`],
+            news: [`${topic} - Últimas Notícias e Updates`, `${topic} - O Que Mudou em 2024`],
+            tutorial: [`${topic} - Tutorial Completo Passo a Passo`, `Aprenda ${topic} em 10 Minutos`]
+        };
+        
+        const options = templates[style] || templates.educativo;
+        return options[Math.floor(Math.random() * options.length)];
+    }
+    
+    generateDescription(content) {
+        const firstSentences = content.split('.').slice(0, 2).join('.');
+        return firstSentences.substring(0, 150) + '... Inscreva-se para mais conteúdo!';
+    }
+    
+    generateKeywords(topic, contentKeywords) {
+        return [topic, ...contentKeywords].slice(0, 8);
+    }
+    
+    generateThumbnailTitle(topic) {
+        const templates = [
+            `${topic.toUpperCase()}`,
+            `NOVO: ${topic}`,
+            `${topic} 2024`,
+            `${topic} REVELADO`
+        ];
+        return templates[Math.floor(Math.random() * templates.length)];
+    }
+    
+    generateHashtags(topic, keywords) {
+        const topicTag = '#' + topic.replace(/\s+/g, '').toLowerCase();
+        const keywordTags = keywords.slice(0, 4).map(k => '#' + k);
+        return [topicTag, ...keywordTags, '#viral', '#2024'];
+    }
+    
+    checkLength(content) {
+        const length = content.length;
+        if (length > 800 && length < 2000) return 95;
+        if (length > 600 && length < 2500) return 85;
+        return 70;
+    }
+    
+    checkHooks(content, hooks) {
+        const hasHooks = hooks.some(hook => 
+            content.toLowerCase().includes(hook.toLowerCase())
+        );
+        return hasHooks ? 95 : 75;
+    }
+    
+    checkStructure(content, requiredSections) {
+        // Verificar se tem estrutura básica (intro, body, conclusion)
+        const hasIntro = content.length > 100;
+        const hasBody = content.split('.').length > 5;
+        const hasConclusion = content.toLowerCase().includes('resumindo') || 
+                             content.toLowerCase().includes('concluindo');
+        
+        const structureScore = (hasIntro ? 30 : 0) + (hasBody ? 40 : 0) + (hasConclusion ? 30 : 0);
+        return Math.min(structureScore + 10, 100);
+    }
+    
+    checkEngagement(content) {
+        const engagementWords = ['você', 'seu', 'sua', 'vamos', 'imagine', 'pense', 'veja'];
+        const engagementCount = engagementWords.reduce((count, word) => 
+            count + (content.toLowerCase().match(new RegExp(word, 'g')) || []).length, 0
+        );
+        
+        return Math.min((engagementCount * 10) + 60, 100);
+    }
+    
+    checkReadability(content) {
+        const sentences = content.split('.').filter(s => s.trim().length > 0);
+        const avgSentenceLength = sentences.reduce((sum, s) => sum + s.split(' ').length, 0) / sentences.length;
+        
+        // Sentenças ideais: 15-20 palavras
+        if (avgSentenceLength >= 15 && avgSentenceLength <= 20) return 95;
+        if (avgSentenceLength >= 10 && avgSentenceLength <= 25) return 85;
+        return 75;
+    }
+    
+    generateRecommendations(criteria, style) {
+        const recommendations = [];
+        
+        if (criteria.length < 80) {
+            recommendations.push('Aumentar o conteúdo para melhor engajamento');
+        }
+        if (criteria.hooks < 80) {
+            recommendations.push(`Adicionar mais hooks do estilo ${style}`);
+        }
+        if (criteria.engagement < 80) {
+            recommendations.push('Usar mais linguagem direta e pessoal');
+        }
+        if (criteria.readability < 80) {
+            recommendations.push('Simplificar sentenças para melhor compreensão');
+        }
+        
+        return recommendations;
+    }
+    
+    predictViews(scriptData) {
+        // Algoritmo simples de predição (pode ser melhorado com ML)
+        let score = 0;
+        
+        // Qualidade do script
+        score += scriptData.quality.score * 0.4;
+        
+        // SEO optimization
+        score += scriptData.seo.tags.length * 2;
+        
+        // Engagement factors
+        if (scriptData.script.content.toLowerCase().includes('você')) score += 10;
+        if (scriptData.seo.title.includes('Como')) score += 15;
+        if (scriptData.seo.title.includes('2024')) score += 10;
+        
+        // Normalizar para views estimadas
+        return Math.max(Math.floor(score * 100), 1000);
+    }
+    
+    /**
+     * Health check do gerador
+     */
+    async healthCheck() {
+        return {
+            status: 'healthy',
+            service: 'AI Script Generator',
+            features: {
+                styles: Object.keys(this.templates),
+                seoOptimization: true,
+                qualityAnalysis: true,
+                multipleVariations: true,
+                researchIntegration: true
+            },
+            performance: {
+                avgGenerationTime: '2-5 seconds',
+                cacheEnabled: !!this.cache,
+                supportedLanguages: ['português']
+            }
+        };
+    }
+    
+    /**
+     * Obter estatísticas do gerador
+     */
+    getStats() {
+        return {
+            supportedStyles: Object.keys(this.templates),
+            avgQualityScore: 85,
+            generationSuccess: '98%',
+            avgProcessingTime: '3.2s',
+            featuresEnabled: [
+                'SEO Optimization',
+                'Quality Analysis', 
+                'Multiple Variations',
+                'Research Integration',
+                'Timing Analysis'
+            ]
+        };
+    }
+}
+
+module.exports = { AIScriptGenerator };
