@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Gerador de Imagens WEBDARK</title>
+   <script src="https://cdn.tailwindcss.com"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+   <style>
+       body {
+           background-color: #121212;
+           color: #E0E0E0;
+           font-family: 'Inter', sans-serif;
+       }
+       .container {
+           max-width: 800px;
+           margin: auto;
+           padding: 20px;
+       }
+       .card {
+           background-color: #1E1E1E;
+           border-radius: 12px;
+           padding: 24px;
+           border: 1px solid #333;
+       }
+       .form-input, .form-textarea, .form-select {
+           width: 100%;
+           padding: 12px;
+           background-color: #2D2D2D;
+           border: 1px solid #444;
+           border-radius: 8px;
+           color: #E0E0E0;
+           transition: border-color 0.3s;
+       }
+       .form-input:focus, .form-textarea:focus, .form-select:focus {
+           outline: none;
+           border-color: #E53E3E;
+       }
+       .btn {
+           padding: 12px 24px;
+           font-weight: bold;
+           border-radius: 8px;
+           transition: transform 0.2s, background-color 0.2s;
+       }
+       .btn:hover {
+           transform: translateY(-2px);
+       }
+       .btn-generate {
+           background-color: #E53E3E;
+           color: #FFFFFF;
+           box-shadow: 0 4px 6px rgba(229, 62, 62, 0.4);
+       }
+       .btn-download-all {
+           background-color: #1A73E8;
+           color: #FFFFFF;
+           box-shadow: 0 4px 6px rgba(26, 115, 232, 0.4);
+       }
+       .btn-download-individual {
+           background-color: #4CAF50;
+           color: #FFFFFF;
+           padding: 8px 16px;
+           font-size: 0.875rem;
+           box-shadow: 0 2px 4px rgba(76, 175, 80, 0.4);
+       }
+       .progress-bar {
+           background-color: #444;
+           border-radius: 999px;
+       }
+       .progress-fill {
+           height: 10px;
+           background-color: #E53E3E;
+           border-radius: 999px;
+           transition: width 0.4s ease-in-out;
+       }
+       .image-container {
+           display: grid;
+           gap: 16px;
+           grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+       }
+       .image-card {
+           background-color: #2D2D2D;
+           border-radius: 8px;
+           overflow: hidden;
+           border: 1px solid #444;
+           transition: transform 0.2s;
+           display: flex;
+           flex-direction: column;
+           align-items: center;
+           text-align: center;
+       }
+       .image-card:hover {
+           transform: scale(1.03);
+       }
+       .image-card img {
+           width: 100%;
+           height: auto;
+       }
+   </style>
+</head>
+<body>
+
+<div class="container">
+   <div class="card">
+       <h1 class="text-2xl font-bold text-center mb-6 text-[#E53E3E]">Gerador de Imagens WEBDARK</h1>
+      
+       <div class="mb-6">
+           <label for="promptsText" class="block text-sm font-medium mb-2">Prompts de Imagem (um por linha):</label>
+           <textarea id="promptsText" rows="6" class="form-textarea" placeholder="Ex:
+Um robô meditando em um jardim japonês
+Um dragão de vapor em uma cidade futurista
+Um carro voador no pôr do sol"></textarea>
+       </div>
+
+       <div class="mb-6">
+           <label for="aspectRatio" class="block text-sm font-medium mb-2">Proporção:</label>
+           <select id="aspectRatio" class="form-select">
+               <option value="16:9" selected>16:9 (Vídeos)</option>
+               <option value="1:1">1:1 (Quadrado)</option>
+               <option value="9:16">9:16 (Vertical)</option>
+           </select>
+       </div>
+
+       <div id="progressSection" class="mb-6 hidden">
+           <h2 class="text-lg font-semibold mb-2">Progresso da Geração</h2>
+           <div class="progress-bar">
+               <div id="progressBarFill" class="progress-fill" style="width: 0%;"></div>
+           </div>
+           <div id="progressText" class="text-sm mt-2 text-center">Aguardando...</div>
+       </div>
+      
+       <button id="generateButton" class="btn btn-generate w-full">Gerar Imagens</button>
+      
+       <div id="messageBox" class="mt-6 text-sm"></div>
+
+       <div id="imageOutput" class="mt-6 hidden">
+           <h2 class="text-lg font-semibold mb-4">Imagens Geradas</h2>
+           <div id="imageContainer" class="image-container"></div>
+           <button id="downloadAllButton" class="btn btn-download-all w-full mt-4">Baixar Todas</button>
+       </div>
+   </div>
+</div>
+
+<script>
+   document.addEventListener('DOMContentLoaded', () => {
+       const promptsTextarea = document.getElementById('promptsText');
+       const aspectRatioSelect = document.getElementById('aspectRatio');
+       const generateButton = document.getElementById('generateButton');
+       const progressSection = document.getElementById('progressSection');
+       const progressBarFill = document.getElementById('progressBarFill');
+       const progressText = document.getElementById('progressText');
+       const messageBox = document.getElementById('messageBox');
+       const imageOutput = document.getElementById('imageOutput');
+       const imageContainer = document.getElementById('imageContainer');
+       const downloadAllButton = document.getElementById('downloadAllButton');
+
+       let generatedImages = [];
+       const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/imagen-3.0-generate-002:predict?key=";
+
+       function showMessage(msg, color = 'text-gray-400') {
+           messageBox.innerHTML = `<div class="p-4 rounded-lg ${color}">${msg}</div>`;
+       }
+
+       function hideMessage() {
+           messageBox.innerHTML = '';
+       }
+
+       function toggleControls(processing) {
+           generateButton.disabled = processing;
+           promptsTextarea.disabled = processing;
+           aspectRatioSelect.disabled = processing;
+           progressSection.classList.toggle('hidden', !processing);
+       }
+
+       function updateProgressBar(value, total) {
+           const percentage = total > 0 ? (value / total) * 100 : 0;
+           progressBarFill.style.width = `${percentage}%`;
+           progressText.textContent = `Gerando imagem ${value} de ${total}`;
+       }
+      
+       async function generateImage(prompt, aspectRatio) {
+           const payload = {
+               instances: {
+                   prompt: prompt
+               },
+               parameters: {
+                   sampleCount: 1,
+                   aspectRatio: aspectRatio
+               }
+           };
+          
+           const apiKey = "";
+          
+           try {
+               const response = await fetch(API_URL + apiKey, {
+                   method: 'POST',
+                   headers: { 'Content-Type': 'application/json' },
+                   body: JSON.stringify(payload)
+               });
+              
+               if (!response.ok) {
+                   const errorData = await response.json();
+                   throw new Error(`Erro na API: ${response.status} - ${errorData.error.message}`);
+               }
+              
+               const result = await response.json();
+               const base64Data = result?.predictions?.[0]?.bytesBase64Encoded;
+              
+               if (base64Data) {
+                   return `data:image/png;base64,${base64Data}`;
+               } else {
+                   throw new Error('Resposta de imagem inválida.');
+               }
+           } catch (error) {
+               console.error('Erro ao gerar imagem:', error);
+               showMessage(`Erro ao gerar imagem: ${error.message}`, 'bg-red-900');
+               return null;
+           }
+       }
+      
+       function downloadImage(url, filename) {
+           const a = document.createElement('a');
+           a.href = url;
+           a.download = filename;
+           document.body.appendChild(a);
+           a.click();
+           document.body.removeChild(a);
+       }
+      
+       async function downloadAllImages() {
+           if (generatedImages.length === 0) {
+               showMessage('Nenhuma imagem para baixar.', 'bg-red-900');
+               return;
+           }
+          
+           showMessage('Preparando download...', 'bg-gray-700');
+           const zip = new JSZip();
+           const promises = generatedImages.map(async (img, index) => {
+               const response = await fetch(img.url);
+               const blob = await response.blob();
+               zip.file(`imagem_${index + 1}.png`, blob);
+           });
+          
+           await Promise.all(promises);
+          
+           zip.generateAsync({ type: 'blob' }).then(content => {
+               const url = URL.createObjectURL(content);
+               const a = document.createElement('a');
+               a.href = url;
+               a.download = 'imagens_geradas.zip';
+               document.body.appendChild(a);
+               a.click();
+               document.body.removeChild(a);
+               URL.revokeObjectURL(url);
+               showMessage('Download concluído!', 'bg-green-700');
+           }).catch(error => {
+               showMessage('Erro ao criar o arquivo ZIP.', 'bg-red-900');
+               console.error('Erro ao criar o arquivo ZIP:', error);
+           });
+       }
+
+       generateButton.addEventListener('click', async () => {
+           const prompts = promptsTextarea.value.trim().split('\n').filter(p => p.trim() !== '');
+           const aspectRatio = aspectRatioSelect.value;
+          
+           if (prompts.length === 0) {
+               showMessage('Por favor, insira pelo menos um prompt para gerar a imagem.', 'text-red-500');
+               return;
+           }
+
+           toggleControls(true);
+           hideMessage();
+           imageOutput.classList.add('hidden');
+           imageContainer.innerHTML = '';
+           downloadAllButton.classList.add('hidden');
+           generatedImages = [];
+
+           const totalPrompts = prompts.length;
+           updateProgressBar(0, totalPrompts);
+
+           let successfulGenerations = 0;
+           for (let i = 0; i < totalPrompts; i++) {
+               const prompt = prompts[i];
+               const imageUrl = await generateImage(prompt, aspectRatio);
+              
+               if (imageUrl) {
+                   const imgCard = document.createElement('div');
+                   imgCard.className = 'image-card';
+                   imgCard.innerHTML = `
+                       <img src="${imageUrl}" alt="${prompt}" class="rounded-t-lg">
+                       <div class="p-2 text-xs text-gray-400 truncate">${prompt}</div>
+                       <button class="btn btn-download-individual w-full mt-2">Baixar</button>
+                   `;
+                   imageContainer.appendChild(imgCard);
+                  
+                   const downloadBtn = imgCard.querySelector('.btn-download-individual');
+                   downloadBtn.addEventListener('click', () => {
+                       downloadImage(imageUrl, `imagem_${i + 1}.png`);
+                   });
+                  
+                   generatedImages.push({ url: imageUrl, prompt: prompt });
+                   successfulGenerations++;
+               }
+
+               updateProgressBar(i + 1, totalPrompts);
+           }
+          
+           toggleControls(false);
+           if (successfulGenerations > 0) {
+               imageOutput.classList.remove('hidden');
+               downloadAllButton.classList.remove('hidden');
+               showMessage(`Processo concluído! ${successfulGenerations} imagem(ns) gerada(s).`, 'text-green-500');
+           } else {
+               showMessage('Nenhuma imagem foi gerada com sucesso.', 'text-red-500');
+           }
+       });
+      
+       downloadAllButton.addEventListener('click', downloadAllImages);
+   });
+</script>
+</body>
+</html>

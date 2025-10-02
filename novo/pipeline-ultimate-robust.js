@@ -149,6 +149,25 @@ JSON:
     }
     
     async gerarImagensRobustas(jobId) {
+        // Tentar Firestore Trigger primeiro se disponível
+        if (process.env.FIREBASE_APP_ID && fs.existsSync(process.env.GOOGLE_APPLICATION_CREDENTIALS || "./serviceAccountKey.json")) {
+            try {
+                console.log("🔥 Tentando Firestore Trigger...");
+                const FirestoreTrigger = require("./services/triggers/firestore-image-trigger");
+                const trigger = new FirestoreTrigger({ logger: console });
+                
+                const promptTexts = prompts.map(p => p.prompt || p);
+                const results = await trigger.generateImagesWithTrigger(promptTexts, { jobId });
+                
+                if (results.success && results.images.length > 0) {
+                    console.log(`✅ Firestore gerou ${results.images.length} imagens`);
+                    return results.images;
+                }
+            } catch (error) {
+                console.log(`❌ Firestore Trigger falhou: ${error.message}`);
+                console.log("🔄 Continuando com multi-provider...");
+            }
+        }
         const prompts = [
             "Professional tech news studio background, modern design, clean blue gradient, professional lighting, 16:9 aspect ratio",
             "AI neural network visualization, futuristic holographic display, glowing nodes and connections, blue and purple aesthetic, high-tech",

@@ -5,6 +5,7 @@
 !tsconfig.json
 .env
 novo/google-drive-credentials.json
+serviceAccountKey.json
 
 # Dependências
 novo/node_modules/

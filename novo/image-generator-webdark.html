@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎨 Pipeline Ultimate - Gerador de Imagens WEBDARK</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.6.0/jszip.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background-color: #121212;
+            color: #E0E0E0;
+            font-family: 'Inter', sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: auto;
+            padding: 20px;
+        }
+        .card {
+            background-color: #1E1E1E;
+            border-radius: 12px;
+            padding: 24px;
+            border: 1px solid #333;
+        }
+        .form-input, .form-textarea, .form-select {
+            width: 100%;
+            padding: 12px;
+            background-color: #2D2D2D;
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: #E0E0E0;
+            transition: border-color 0.3s;
+        }
+        .form-input:focus, .form-textarea:focus, .form-select:focus {
+            outline: none;
+            border-color: #E53E3E;
+        }
+        .btn {
+            padding: 12px 24px;
+            font-weight: bold;
+            border-radius: 8px;
+            transition: transform 0.2s, background-color 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        .btn-generate {
+            background-color: #E53E3E;
+            color: #FFFFFF;
+            box-shadow: 0 4px 6px rgba(229, 62, 62, 0.4);
+        }
+        .btn-download-all {
+            background-color: #1A73E8;
+            color: #FFFFFF;
+            box-shadow: 0 4px 6px rgba(26, 115, 232, 0.4);
+        }
+        .btn-download-individual {
+            background-color: #4CAF50;
+            color: #FFFFFF;
+            padding: 8px 16px;
+            font-size: 0.875rem;
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.4);
+        }
+        .progress-bar {
+            background-color: #444;
+            border-radius: 999px;
+        }
+        .progress-fill {
+            height: 10px;
+            background-color: #E53E3E;
+            border-radius: 999px;
+            transition: width 0.4s ease-in-out;
+        }
+        .image-container {
+            display: grid;
+            gap: 16px;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        }
+        .image-card {
+            background-color: #2D2D2D;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid #444;
+            transition: transform 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .image-card:hover {
+            transform: scale(1.03);
+        }
+        .image-card img {
+            width: 100%;
+            height: auto;
+        }
+        .provider-stats {
+            background-color: #2D2D2D;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            font-size: 0.9em;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="card">
+        <h1 class="text-3xl font-bold text-center mb-2 text-[#E53E3E]">🎨 Pipeline Ultimate</h1>
+        <h2 class="text-xl text-center mb-6 text-gray-400">Gerador de Imagens WEBDARK V6.2</h2>
+        
+        <!-- Provider Status -->
+        <div class="provider-stats">
+            <div class="text-sm font-semibold mb-2">🔄 Provedores Ativos:</div>
+            <div id="providerStatus" class="grid grid-cols-2 gap-2 text-xs">
+                <div>🍌 Nano Banana: <span class="text-green-400">Ready</span></div>
+                <div>🌸 Pollinations: <span class="text-green-400">Ready</span></div>
+                <div>⚡ Together AI: <span class="text-yellow-400">Config</span></div>
+                <div>🤗 Hugging Face: <span class="text-yellow-400">Config</span></div>
+            </div>
+        </div>
+        
+        <div class="mb-6">
+            <label for="promptsText" class="block text-sm font-medium mb-2">Prompts de Imagem (um por linha):</label>
+            <textarea id="promptsText" rows="6" class="form-textarea" placeholder="Ex:
+Professional tech news studio, modern design, blue lighting, 16:9 aspect ratio
+AI neural network visualization, futuristic holographic display, high-tech
+Modern data center server room, LED lighting, professional technology
+Abstract technology pattern, digital circuits, modern aesthetic"></textarea>
+        </div>
+
+        <div class="mb-6">
+            <label for="aspectRatio" class="block text-sm font-medium mb-2">Proporção:</label>
+            <select id="aspectRatio" class="form-select">
+                <option value="16:9" selected>16:9 (Vídeos/YouTube)</option>
+                <option value="1:1">1:1 (Quadrado/Instagram)</option>
+                <option value="9:16">9:16 (Vertical/TikTok)</option>
+                <option value="4:3">4:3 (Apresentações)</option>
+            </select>
+        </div>
+
+        <div class="mb-6">
+            <label for="providerSelect" class="block text-sm font-medium mb-2">Provedor de IA:</label>
+            <select id="providerSelect" class="form-select">
+                <option value="multi">🔄 Multi-Provider (Recomendado)</option>
+                <option value="nano-banana">🍌 Nano Banana (Premium)</option>
+                <option value="pollinations">🌸 Pollinations (Ilimitado)</option>
+                <option value="together">⚡ Together AI (FLUX)</option>
+                <option value="huggingface">🤗 Hugging Face (FLUX)</option>
+            </select>
+        </div>
+
+        <div id="progressSection" class="mb-6 hidden">
+            <h2 class="text-lg font-semibold mb-2">Progresso da Geração</h2>
+            <div class="progress-bar">
+                <div id="progressBarFill" class="progress-fill" style="width: 0%;"></div>
+            </div>
+            <div id="progressText" class="text-sm mt-2 text-center">Aguardando...</div>
+            <div id="providerLog" class="text-xs text-gray-400 mt-2"></div>
+        </div>
+        
+        <button id="generateButton" class="btn btn-generate w-full">🚀 Gerar Imagens com Pipeline Ultimate</button>
+        
+        <div id="messageBox" class="mt-6 text-sm"></div>
+
+        <div id="imageOutput" class="mt-6 hidden">
+            <h2 class="text-lg font-semibold mb-4">🎨 Imagens Geradas</h2>
+            <div id="generationStats" class="provider-stats mb-4"></div>
+            <div id="imageContainer" class="image-container"></div>
+            <button id="downloadAllButton" class="btn btn-download-all w-full mt-4">⬇️ Baixar Todas as Imagens</button>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const promptsTextarea = document.getElementById('promptsText');
+    const aspectRatioSelect = document.getElementById('aspectRatio');
+    const providerSelect = document.getElementById('providerSelect');
+    const generateButton = document.getElementById('generateButton');
+    const progressSection = document.getElementById('progressSection');
+    const progressBarFill = document.getElementById('progressBarFill');
+    const progressText = document.getElementById('progressText');
+    const providerLog = document.getElementById('providerLog');
+    const messageBox = document.getElementById('messageBox');
+    const imageOutput = document.getElementById('imageOutput');
+    const imageContainer = document.getElementById('imageContainer');
+    const downloadAllButton = document.getElementById('downloadAllButton');
+    const generationStats = document.getElementById('generationStats');
+
+    let generatedImages = [];
+    
+    // CONFIGURAÇÃO DO PIPELINE ULTIMATE
+    const PIPELINE_CONFIG = {
+        // Chaves Gemini para Nano Banana
+        geminiKeys: [
+            'AIzaSyAiylwL6EZnDcHUA3ZBv0SNx3TrnJB7xhs',
+            'AIzaSyCUmSH7lbtPZdd6U4omJZGO5YiIacLcz60', 
+            'AIzaSyDp6UshwV2FmvQABKeG-V0jUGNwR_OazKo'
+        ],
+        currentKeyIndex: 0,
+        providers: {
+            'nano-banana': {
+                name: '🍌 Nano Banana',
+                model: 'gemini-2.5-flash-image-preview',
+                quality: 'premium'
+            },
+            'pollinations': {
+                name: '🌸 Pollinations',
+                endpoint: 'https://pollinations.ai/p/',
+                quality: 'high'
+            },
+            'together': {
+                name: '⚡ Together AI',
+                endpoint: 'https://api.together.xyz/v1/images/generations',
+                model: 'black-forest-labs/FLUX.1-schnell-Free',
+                quality: 'high'
+            },
+            'huggingface': {
+                name: '🤗 Hugging Face',
+                endpoint: 'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev',
+                quality: 'good'
+            }
+        }
+    };
+
+    function showMessage(msg, color = 'text-gray-400') {
+        messageBox.innerHTML = `<div class="p-4 rounded-lg ${color}">${msg}</div>`;
+    }
+
+    function hideMessage() {
+        messageBox.innerHTML = '';
+    }
+
+    function toggleControls(processing) {
+        generateButton.disabled = processing;
+        promptsTextarea.disabled = processing;
+        aspectRatioSelect.disabled = processing;
+        providerSelect.disabled = processing;
+        progressSection.classList.toggle('hidden', !processing);
+    }
+
+    function updateProgressBar(value, total, provider = '') {
+        const percentage = total > 0 ? (value / total) * 100 : 0;
+        progressBarFill.style.width = `${percentage}%`;
+        progressText.textContent = `Gerando imagem ${value} de ${total}`;
+        if (provider) {
+            providerLog.textContent = `Usando: ${provider}`;
+        }
+    }
+    
+    function updateGenerationStats(stats) {
+        const statsHtml = Object.entries(stats).map(([provider, count]) => 
+            `<span class="inline-block bg-gray-600 px-2 py-1 rounded text-xs mr-2">${provider}: ${count}</span>`
+        ).join('');
+        
+        generationStats.innerHTML = `
+            <div class="text-sm font-semibold mb-2">📊 Distribuição por Provedor:</div>
+            ${statsHtml}
+        `;
+    }
+
+    // GERAÇÃO COM NANO BANANA (GEMINI)
+    async function generateWithNanaBanana(prompt, aspectRatio) {
+        const [width, height] = getAspectRatioDimensions(aspectRatio);
+        const imagePrompt = `Generate high-quality professional image: ${prompt}. Resolution: ${width}x${height}, ${aspectRatio} aspect ratio, photorealistic, detailed, modern aesthetic`;
+
+        for (let keyIndex = 0; keyIndex < PIPELINE_CONFIG.geminiKeys.length; keyIndex++) {
+            try {
+                const apiKey = PIPELINE_CONFIG.geminiKeys[keyIndex];
+                
+                const response = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent?key=${apiKey}`,
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: imagePrompt }] }],
+                            generationConfig: {
+                                temperature: 0.6,
+                                maxOutputTokens: 1000,
+                                responseModalities: ['Image']
+                            }
+                        })
+                    }
+                );
+
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    if (errorData.error?.message?.includes('quota')) {
+                        console.log(`Nano Banana chave ${keyIndex + 1}: Quota excedida`);
+                        continue;
+                    }
+                    throw new Error(errorData.error?.message || 'Erro na API');
+                }
+
+                const result = await response.json();
+                const imagePart = result.candidates?.[0]?.content?.parts?.find(part => part.inlineData);
+                
+                if (imagePart) {
+                    return {
+                        success: true,
+                        imageData: `data:image/png;base64,${imagePart.inlineData.data}`,
+                        provider: 'nano-banana'
+                    };
+                }
+                
+            } catch (error) {
+                console.log(`Nano Banana chave ${keyIndex + 1}: ${error.message}`);
+                continue;
+            }
+        }
+        
+        throw new Error('Nano Banana: Todas as chaves falharam');
+    }
+
+    // GERAÇÃO COM POLLINATIONS
+    async function generateWithPollinations(prompt, aspectRatio) {
+        const [width, height] = getAspectRatioDimensions(aspectRatio);
+        const enhancedPrompt = `Professional high quality image: ${prompt}. ${aspectRatio} aspect ratio, detailed photography, 8k resolution, modern style`;
+        const encodedPrompt = encodeURIComponent(enhancedPrompt);
+        const seed = Date.now() + Math.floor(Math.random() * 1000);
+        
+        const imageUrl = `https://pollinations.ai/p/${encodedPrompt}?width=${width}&height=${height}&seed=${seed}&model=flux&enhance=true`;
+        
+        const response = await fetch(imageUrl, {
+            timeout: 25000
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            if (blob.size > 10000) { // Mínimo 10KB
+                const reader = new FileReader();
+                return new Promise((resolve) => {
+                    reader.onload = () => {
+                        resolve({
+                            success: true,
+                            imageData: reader.result,
+                            provider: 'pollinations'
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            }
+        }
+        
+        throw new Error('Pollinations: Imagem inválida');
+    }
+
+    // GERAÇÃO COM TOGETHER AI
+    async function generateWithTogether(prompt, aspectRatio) {
+        // Simulação - Together AI precisa de chave real
+        throw new Error('Together AI: Configure TOGETHER_API_KEY');
+    }
+
+    // GERAÇÃO COM HUGGING FACE
+    async function generateWithHuggingFace(prompt, aspectRatio) {
+        const [width, height] = getAspectRatioDimensions(aspectRatio);
+        
+        const response = await fetch(
+            'https://api-inference.huggingface.co/models/black-forest-labs/FLUX.1-dev',
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    inputs: `Professional high quality image: ${prompt}. ${aspectRatio} aspect ratio, detailed, photorealistic`,
+                    parameters: {
+                        width: width,
+                        height: height,
+                        num_inference_steps: 25
+                    }
+                }),
+                timeout: 60000
+            }
+        );
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            if (blob.size > 10000) {
+                const reader = new FileReader();
+                return new Promise((resolve) => {
+                    reader.onload = () => {
+                        resolve({
+                            success: true,
+                            imageData: reader.result,
+                            provider: 'huggingface'
+                        });
+                    };
+                    reader.readAsDataURL(blob);
+                });
+            }
+        }
+        
+        throw new Error('Hugging Face: Em fila ou erro');
+    }
+
+    // GERAÇÃO MULTI-PROVIDER (SISTEMA ROBUSTO)
+    async function generateWithMultiProvider(prompt, aspectRatio) {
+        const providers = [
+            { name: 'nano-banana', func: generateWithNanaBanana },
+            { name: 'pollinations', func: generateWithPollinations },
+            { name: 'huggingface', func: generateWithHuggingFace }
+        ];
+        
+        for (const provider of providers) {
+            try {
+                const result = await provider.func(prompt, aspectRatio);
+                if (result.success) {
+                    return result;
+                }
+            } catch (error) {
+                console.log(`${provider.name}: ${error.message}`);
+                continue;
+            }
+        }
+        
+        throw new Error('Todos os provedores falharam');
+    }
+
+    function getAspectRatioDimensions(aspectRatio) {
+        const dimensions = {
+            '16:9': [1280, 720],
+            '1:1': [1024, 1024],
+            '9:16': [720, 1280],
+            '4:3': [1024, 768]
+        };
+        return dimensions[aspectRatio] || [1280, 720];
+    }
+
+    async function generateImage(prompt, aspectRatio, provider) {
+        const generators = {
+            'multi': generateWithMultiProvider,
+            'nano-banana': generateWithNanaBanana,
+            'pollinations': generateWithPollinations,
+            'together': generateWithTogether,
+            'huggingface': generateWithHuggingFace
+        };
+        
+        const generator = generators[provider];
+        if (!generator) {
+            throw new Error('Provedor inválido');
+        }
+        
+        return await generator(prompt, aspectRatio);
+    }
+
+    function downloadImage(url, filename) {
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+    }
+
+    async function downloadAllImages() {
+        if (generatedImages.length === 0) {
+            showMessage('Nenhuma imagem para baixar.', 'bg-red-900');
+            return;
+        }
+
+        showMessage('Preparando download...', 'bg-gray-700');
+        const zip = new JSZip();
+        const promises = generatedImages.map(async (img, index) => {
+            const response = await fetch(img.url);
+            const blob = await response.blob();
+            zip.file(`pipeline_ultimate_${index + 1}_${img.provider}.png`, blob);
+        });
+
+        await Promise.all(promises);
+
+        zip.generateAsync({ type: 'blob' }).then(content => {
+            const url = URL.createObjectURL(content);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `pipeline_ultimate_images_${Date.now()}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showMessage('Download concluído!', 'bg-green-700');
+        }).catch(error => {
+            showMessage('Erro ao criar o arquivo ZIP.', 'bg-red-900');
+            console.error('Erro ao criar o arquivo ZIP:', error);
+        });
+    }
+
+    generateButton.addEventListener('click', async () => {
+        const prompts = promptsTextarea.value.trim().split('\n').filter(p => p.trim() !== '');
+        const aspectRatio = aspectRatioSelect.value;
+        const provider = providerSelect.value;
+
+        if (prompts.length === 0) {
+            showMessage('Por favor, insira pelo menos um prompt para gerar a imagem.', 'text-red-500');
+            return;
+        }
+
+        toggleControls(true);
+        hideMessage();
+        imageOutput.classList.add('hidden');
+        imageContainer.innerHTML = '';
+        downloadAllButton.classList.add('hidden');
+        generatedImages = [];
+
+        const totalPrompts = prompts.length;
+        const providerStats = {};
+        
+        updateProgressBar(0, totalPrompts);
+
+        let successfulGenerations = 0;
+        for (let i = 0; i < totalPrompts; i++) {
+            const prompt = prompts[i];
+            
+            try {
+                updateProgressBar(i, totalPrompts, `Gerando com ${PIPELINE_CONFIG.providers[provider]?.name || provider}...`);
+                
+                const result = await generateImage(prompt, aspectRatio, provider);
+                
+                if (result.success) {
+                    const providerName = PIPELINE_CONFIG.providers[result.provider]?.name || result.provider;
+                    providerStats[providerName] = (providerStats[providerName] || 0) + 1;
+                    
+                    const imgCard = document.createElement('div');
+                    imgCard.className = 'image-card';
+                    imgCard.innerHTML = `
+                        <img src="${result.imageData}" alt="${prompt}" class="rounded-t-lg">
+                        <div class="p-2">
+                            <div class="text-xs text-gray-400 mb-2 truncate">${prompt}</div>
+                            <div class="text-xs text-green-400 mb-2">${providerName}</div>
+                            <button class="btn btn-download-individual w-full">⬇️ Baixar</button>
+                        </div>
+                    `;
+                    imageContainer.appendChild(imgCard);
+
+                    const downloadBtn = imgCard.querySelector('.btn-download-individual');
+                    downloadBtn.addEventListener('click', () => {
+                        downloadImage(result.imageData, `pipeline_ultimate_${i + 1}_${result.provider}.png`);
+                    });
+
+                    generatedImages.push({ 
+                        url: result.imageData, 
+                        prompt: prompt,
+                        provider: result.provider
+                    });
+                    successfulGenerations++;
+                }
+                
+            } catch (error) {
+                console.error(`Erro na imagem ${i + 1}:`, error);
+                providerLog.textContent = `❌ Erro: ${error.message}`;
+            }
+
+            updateProgressBar(i + 1, totalPrompts);
+        }
+
+        toggleControls(false);
+        if (successfulGenerations > 0) {
+            imageOutput.classList.remove('hidden');
+            downloadAllButton.classList.remove('hidden');
+            updateGenerationStats(providerStats);
+            showMessage(`🎉 Processo concluído! ${successfulGenerations} imagem(ns) gerada(s) com Pipeline Ultimate.`, 'text-green-500');
+        } else {
+            showMessage('❌ Nenhuma imagem foi gerada com sucesso. Verifique as configurações.', 'text-red-500');
+        }
+    });
+
+    downloadAllButton.addEventListener('click', downloadAllImages);
+});
+</script>
+</body>
+</html>
