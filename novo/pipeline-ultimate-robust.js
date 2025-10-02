@@ -216,25 +216,25 @@ JSON:
         // PROVEDORES EM ORDEM DE PRIORIDADE
         const providers = [
             {
-                nome: 'Nano Banana',
+                nome: "Nano Banana",
                 metodo: this.gerarImagemNanaBanana.bind(this),
                 maxTentativas: 3,
                 timeout: 45000
             },
             {
-                nome: 'Pollinations',
+                nome: "SDXL Premium",
+                metodo: this.gerarImagemSDXL.bind(this),
+                maxTentativas: 2,
+                timeout: 90000
+            },
+            {
+                nome: "Pollinations",
                 metodo: this.gerarImagemPollinations.bind(this),
                 maxTentativas: 3,
                 timeout: 20000
             },
             {
-                nome: 'Together AI',
-                metodo: this.gerarImagemTogetherAI.bind(this),
-                maxTentativas: 2,
-                timeout: 30000
-            },
-            {
-                nome: 'Hugging Face',
+                nome: "Hugging Face",
                 metodo: this.gerarImagemHuggingFace.bind(this),
                 maxTentativas: 2,
                 timeout: 60000
@@ -418,6 +418,62 @@ JSON:
         throw new Error('Together AI: Imagem inválida');
     }
     
+    async gerarImagemSDXL(prompt, jobId, sceneIndex) {
+        try {
+            const SDXLGenerator = require("./services/ai/sdxl-huggingface-generator");
+            const sdxl = new SDXLGenerator({ logger: console });
+            
+            const result = await sdxl.generateImageWithSDXL(prompt, {
+                jobId: jobId,
+                sceneIndex: sceneIndex,
+                width: 1280,
+                height: 720,
+                steps: 25
+            });
+            
+            if (result.success) {
+                return {
+                    filename: result.filename,
+                    imagePath: result.imagePath,
+                    imageUrl: result.imageUrl,
+                    provider: "sdxl-huggingface",
+                    size: result.size
+                };
+            }
+            
+            throw new Error("SDXL falhou");
+            
+        } catch (error) {
+            throw new Error(`SDXL: ${error.message}`);
+        }
+    }
+    async gerarImagemSDXL(prompt, jobId, sceneIndex) {
+        try {
+            const SDXLWorking = require("./services/ai/sdxl-working");
+            const sdxl = new SDXLWorking();
+            
+            const result = await sdxl.generateImage(prompt, {
+                jobId: jobId,
+                sceneIndex: sceneIndex
+            });
+            
+            if (result.success) {
+                console.log(`   ✅ SDXL: ${result.filename} (${result.size}, ${result.responseTime})`);
+                return {
+                    filename: result.filename,
+                    imagePath: result.imagePath,
+                    imageUrl: result.imageUrl,
+                    provider: "sdxl-premium",
+                    size: result.size
+                };
+            }
+            
+            throw new Error("SDXL falhou");
+            
+        } catch (error) {
+            throw new Error(`SDXL: ${error.message}`);
+        }
+    }
     async gerarImagemHuggingFace(prompt, jobId, sceneIndex) {
         const hfToken = process.env.HF_TOKEN;
         const headers = { 'Content-Type': 'application/json' };
